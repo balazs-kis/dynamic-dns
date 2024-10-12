@@ -17,7 +17,7 @@ public static class ConfigReader
             var items = File.ReadAllLines(ConfigPath);
 
             var configDictionary = items
-                .Select(i => i.Split(ConfigValueSeparator))
+                .Select(i => i.Split(ConfigValueSeparator, 2))
                 .ToDictionary(i => i[0], i => i[1]);
 
             configuration = new AppConfig
@@ -30,7 +30,8 @@ public static class ConfigReader
                     .GetValueOrDefault(nameof(AppConfig.Hosts))
                     ?.Split(ConfigListSeparator),
                 DnsApiUrlTemplate = configDictionary.GetValueOrDefault(nameof(AppConfig.DnsApiUrlTemplate)),
-                DnsApiSecret = configDictionary.GetValueOrDefault(nameof(AppConfig.DnsApiSecret))
+                DnsApiSecret = configDictionary.GetValueOrDefault(nameof(AppConfig.DnsApiSecret)),
+                DnsApiSuccessMessage = configDictionary.GetValueOrDefault(nameof(AppConfig.DnsApiSuccessMessage)),
             };
         }
         catch (Exception ex)

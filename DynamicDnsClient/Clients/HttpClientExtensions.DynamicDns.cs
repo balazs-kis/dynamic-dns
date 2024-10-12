@@ -27,9 +27,23 @@ public static partial class HttpClientExtensions
                 {
                     ConsoleLogger.LogWarning(
                         $"Could not update IP for '{host}.{config.DomainName}'. " +
-                        $"Response status code: {response.StatusCode})");
+                        $"Response status code: {response.StatusCode}");
 
                     return false;
+                }
+
+                if (!string.IsNullOrWhiteSpace(config.DnsApiSuccessMessage))
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    if (!responseContent.Contains(config.DnsApiSuccessMessage))
+                    {
+                        ConsoleLogger.LogWarning(
+                            $"Could not update IP for '{host}.{config.DomainName}'. " +
+                            "Response status code was OK " +
+                            $"but the response did not contain '{config.DnsApiSuccessMessage}'");
+
+                        return false;
+                    }
                 }
 
                 ConsoleLogger.LogInformation($"Successfully updated '{host}.{config.DomainName}' with IP {newIp}");

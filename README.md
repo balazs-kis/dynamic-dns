@@ -9,13 +9,14 @@ A simple Dynamic DNS client for updating the public IP address of a server, writ
 
 ## Configuration
 The default `.config` configuration file beside the executable contains a template with examples.
-| Config parameter    | Description                                                                                                         |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `IpProviderUrls`    | comma-separated list of APIs that provide the caller's public IP address in a simple text response                  |
-| `DomainName`        | the domain name to update the IP for, e.g. `my-domain.com`                                                          |
-| `Hosts`             | the comma-separated list of host records to update the IP for (generally `@` for root and `*` for wildcard records) |
-| `DnsApiSecret`      | the API secret (if needed), issued by your dynamic DNS provider                                                     |
-| `DnsApiUrlTemplate` | the API endpoint URL template for your dynamic DNS provider used to update the IP address for records               |
+| Config parameter       | Description                                                                                                         |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `IpProviderUrls`       | comma-separated list of APIs that provide the caller's public IP address in a simple text response                  |
+| `DomainName`           | the domain name to update the IP for, e.g. `my-domain.com`                                                          |
+| `Hosts`                | the comma-separated list of host records to update the IP for (generally `@` for root and `*` for wildcard records) |
+| `DnsApiSecret`         | the API secret (if needed), issued by your dynamic DNS provider                                                     |
+| `DnsApiUrlTemplate`    | the API endpoint URL template for your dynamic DNS provider used to update the IP address for records               |
+| `DnsApiSuccessMessage` | a phrase that the content of the API response must include (optional: not checked in not set)                       |
 
 Placeholders in the `DnsApiUrlTemplate` config parameter:
 - `{Host}`: the provided hosts will be substituted here when calling the provider's API

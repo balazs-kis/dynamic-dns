@@ -12,4 +12,5 @@ public sealed record AppConfig
     public string[]? Hosts { get; init; }
     public string? DnsApiUrlTemplate { get; init; }
     public string? DnsApiSecret { get; init; }
+    public string? DnsApiSuccessMessage { get; init; }
 }
