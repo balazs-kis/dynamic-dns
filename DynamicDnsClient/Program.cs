@@ -1,4 +1,5 @@
-﻿using DynamicDnsClient.Clients;
+﻿using DynamicDnsClient;
+using DynamicDnsClient.Clients;
 using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Logging;
 using DynamicDnsClient.Saving;
@@ -8,41 +9,18 @@ if (args.Contains("--silent") || args.Contains("-s"))
     ConsoleLogger.TraceEnabled = false;
 }
 
-ConsoleLogger.LogTrace("Dynamic DNS client started.");
-
-var lastUpdatedPublicIp = FileOperations.GetLastUpdatedPublicIp();
-
-var config = ConfigReader.ReadConfiguration();
-if (config is null)
+try
 {
-    ConsoleLogger.LogWarning($"Dynamic DNS client is exiting due to invalid configuration.{Environment.NewLine}");
-    return;
+    var configReader = new ConfigReader();
+    var httpClientWrapper = new HttpClientWrapper(new HttpClient());
+    var publicIpClient = new PublicIpHttpClient(httpClientWrapper, configReader);
+    var dynamicDnsClient = new DynamicDnsHttpClient(httpClientWrapper, configReader);
+    var persistentStateHandler = new PersistentSateHandler(configReader);
+
+    var dynamicDns = new DynamicDns(configReader, publicIpClient, dynamicDnsClient, persistentStateHandler);
+    await dynamicDns.UpdateIpAddressesAsync();
 }
-
-using var httpClient = new HttpClient();
-
-var newPublicIp = await httpClient.GetPublicIp(config);
-if (newPublicIp is null)
+catch (Exception ex)
 {
-    ConsoleLogger.LogTrace(
-        $"Dynamic DNS client is exiting due to being unable to obtain public IP.{Environment.NewLine}");
-    
-    return;
-}
-
-if (string.Equals(newPublicIp, lastUpdatedPublicIp))
-{
-    ConsoleLogger.LogTrace($"Dynamic DNS client is exiting: IP update is not needed.{Environment.NewLine}");
-    return;
-}
-
-if (await httpClient.UpdateIpForDns(config, newPublicIp))
-{
-    FileOperations.UpdateLastUpdatedPublicIp(newPublicIp);
-    ConsoleLogger.LogTrace($"Dynamic DNS client is exiting: run completed.{Environment.NewLine}");
-}
-else
-{
-    ConsoleLogger.LogTrace(
-        $"Dynamic DNS client is exiting due to being unable to update public IP.{Environment.NewLine}");
+    ConsoleLogger.LogError($"Uncaught error during execution. {ex.GetType().Name}: {ex.Message}");
 }

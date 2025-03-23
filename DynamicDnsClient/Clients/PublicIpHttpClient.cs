@@ -3,20 +3,31 @@ using DynamicDnsClient.Logging;
 
 namespace DynamicDnsClient.Clients;
 
-public static partial class HttpClientExtensions
+public class PublicIpHttpClient : IPublicIpHttpClient
 {
-    public static async Task<string?> GetPublicIp(this HttpClient httpClient, AppConfig config)
+    private readonly IHttpClient _httpClient;
+    private readonly IConfigReader _configReader;
+
+    public PublicIpHttpClient(IHttpClient httpClient, IConfigReader configReader)
+    {
+        _httpClient = httpClient;
+        _configReader = configReader;
+    }
+    
+    public async Task<string?> GetPublicIpAsync()
     {
         try
         {
-            foreach (var ipProviderUrl in config.IpProviderUrls!)
+            var appConfig = await _configReader.ReadConfigurationAsync();
+            
+            foreach (var ipProviderUrl in appConfig!.IpProviderUrls!)
             {
                 using var request = new HttpRequestMessage();
 
                 request.Method = HttpMethod.Get;
                 request.RequestUri = new Uri(ipProviderUrl);
 
-                using var response = await httpClient.SendAsync(request);
+                using var response = await _httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                 {
                     ConsoleLogger.LogWarning(
