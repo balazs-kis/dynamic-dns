@@ -3,9 +3,11 @@ using DynamicDnsClient.Configuration.Models;
 
 namespace DynamicDnsClient.Configuration;
 
-[JsonSourceGenerationOptions(WriteIndented = false)]
+[JsonSourceGenerationOptions(WriteIndented = false, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(AppConfig))]
 [JsonSerializable(typeof(InstanceConfig))]
-public partial class AppConfigContext: JsonSerializerContext
+[JsonSerializable(typeof(string))]
+[JsonSerializable(typeof(string[]))]
+public partial class AppConfigContext : JsonSerializerContext
 {
 }
