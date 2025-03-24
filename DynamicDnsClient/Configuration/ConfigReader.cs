@@ -6,13 +6,18 @@ namespace DynamicDnsClient.Configuration;
 
 public class ConfigReader : IConfigReader
 {
+    private const string AppSettingsName = "appsettings";
+    private const string AppSettingsExtension = ".json";
+    
     private readonly string _appConfigPath;
 
     private AppConfig? _appConfig;
     
-    public ConfigReader(string appConfigPath = "appsettings.json")
+    public ConfigReader(string? environment = null)
     {
-        _appConfigPath = appConfigPath;
+        _appConfigPath = string.IsNullOrWhiteSpace(environment)
+            ? $"{AppSettingsName}{AppSettingsExtension}"
+            : $"{AppSettingsName}.{environment}{AppSettingsExtension}";
     }
     
     public async Task<AppConfig?> ReadConfigurationAsync()

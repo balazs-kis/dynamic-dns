@@ -40,7 +40,7 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
                     if (!response.IsSuccessStatusCode)
                     {
                         ConsoleLogger.LogWarning(
-                            $"Could not update IP for '{host}.{instance.DomainName}'. " +
+                            $"Could not update IP for '{host}.{instance.DomainName}' with IP {newIp}. " +
                             $"Response status code: {response.StatusCode}");
 
                         return false;
@@ -52,7 +52,7 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
                         if (!responseContent.Contains(instance.DnsApiSuccessMessage))
                         {
                             ConsoleLogger.LogWarning(
-                                $"Could not update IP for '{host}.{instance.DomainName}'. " +
+                                $"Could not update IP for '{host}.{instance.DomainName}' with IP {newIp}. " +
                                 "Response status code was OK " +
                                 $"but the response did not contain '{instance.DnsApiSuccessMessage}'");
 
@@ -66,7 +66,8 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
                 catch (Exception ex)
                 {
                     ConsoleLogger.LogWarning(
-                        $"Could not update IP for '{host}.{instance.DomainName}'. {ex.GetType().Name}: {ex.Message}");
+                        $"Could not update IP for '{host}.{instance.DomainName}' with IP {newIp}. " +
+                        $"{ex.GetType().Name}: {ex.Message}");
 
                     return false;
                 }
