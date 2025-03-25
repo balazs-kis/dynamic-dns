@@ -23,7 +23,7 @@ jobs:
         run: dotnet build --no-restore
 
       - name: Test
-        run: dotnet test --no-build --coverage --coverage-output-format xml --coverage-output coverage.xml
+        run: dotnet test -- --coverage --coverage-output-format xml --coverage-output coverage.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
