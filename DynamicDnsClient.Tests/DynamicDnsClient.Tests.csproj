@@ -6,16 +6,10 @@
         <OutputType>Exe</OutputType>
         <RootNamespace>DynamicDnsClient.Tests</RootNamespace>
         <TargetFramework>net9.0</TargetFramework>
-        <!--
-        To enable the Microsoft Testing Platform 'dotnet test' experience, add property:
-          <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
-    
-        To enable the Microsoft Testing Platform native command line experience, add property:
-          <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
-    
-        For more information on Microsoft Testing Platform support in xUnit.net, please visit:
-          https://xunit.net/docs/getting-started/v3/microsoft-testing-platform
-        -->
+        <!-- Enable the Microsoft Testing Platform 'dotnet test' experience -->
+        <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+        <!-- Enable the Microsoft Testing Platform native command line experience -->
+        <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     </PropertyGroup>
 
     <ItemGroup>
