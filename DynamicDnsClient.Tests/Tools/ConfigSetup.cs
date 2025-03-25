@@ -14,29 +14,29 @@ public static class ConfigSetup
         WriteIndented = true,
     };
     
-    public static (string Id, AppConfig Config) GenerateConfig()
+    public static (string Id, AppConfig Config) GenerateConfig(string mockServerUrl)
     {
         var id = GenerateWord();
 
         var config = new AppConfig(
             $"lastUpdatedPublicIp.{id}.txt",
             [
-                $"https://{id}.ip-api-1.net",
-                $"https://{id}.ip-api-2.net",
-                $"https://{id}.ip-api-3.net",
+                $"{mockServerUrl}/{id}/ip-api-1",
+                $"{mockServerUrl}/{id}/ip-api-2",
+                $"{mockServerUrl}/{id}/ip-api-3",
             ],
             [
                 new InstanceConfig(
                     $"{id}.eu",
                     ["@", "*"],
                     $"{id}-eu-secret",
-                    $"https://{id}.dns-1.com/update?host={{Host}}&domain={{Domain}}&password={{Secret}}&ip={{NewIp}}",
+                    $"{mockServerUrl}/{id}/ddns-1/update?host={{Host}}&domain={{Domain}}&password={{Secret}}&ip={{NewIp}}",
                     $"{id}-eu-success-message"),
                 new InstanceConfig(
                     $"{id}.com",
                     ["@"],
                     $"{id}-com-secret",
-                    $"https://{id}.dns-2.com/update?host={{Host}}&domain={{Domain}}&password={{Secret}}&ip={{NewIp}}",
+                    $"{mockServerUrl}/{id}/ddns-2/update?host={{Host}}&domain={{Domain}}&password={{Secret}}&ip={{NewIp}}",
                     $"{id}-com-success-message")
             ]);
         

@@ -6,10 +6,10 @@ namespace DynamicDnsClient.Clients;
 
 public class DynamicDnsHttpClient : IDynamicDnsHttpClient
 {
-    private readonly IHttpClient _httpClient;
+    private readonly HttpClient _httpClient;
     private readonly IConfigReader _configReader;
 
-    public DynamicDnsHttpClient(IHttpClient httpClient, IConfigReader configReader)
+    public DynamicDnsHttpClient(HttpClient httpClient, IConfigReader configReader)
     {
         _httpClient = httpClient;
         _configReader = configReader;

@@ -12,9 +12,9 @@ if (args.Contains("--silent") || args.Contains("-s"))
 try
 {
     var configReader = new ConfigReader();
-    var httpClientWrapper = new HttpClientWrapper(new HttpClient());
-    var publicIpClient = new PublicIpHttpClient(httpClientWrapper, configReader);
-    var dynamicDnsClient = new DynamicDnsHttpClient(httpClientWrapper, configReader);
+    var httpClient = new HttpClient();
+    var publicIpClient = new PublicIpHttpClient(httpClient, configReader);
+    var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, configReader);
     var persistentStateHandler = new PersistentSateHandler(configReader);
 
     var dynamicDns = new DynamicDns(configReader, publicIpClient, dynamicDnsClient, persistentStateHandler);
