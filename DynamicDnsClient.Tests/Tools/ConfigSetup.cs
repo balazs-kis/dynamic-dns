@@ -1,5 +1,4 @@
-﻿using System.Text;
-using System.Text.Encodings.Web;
+﻿using System.Text.Encodings.Web;
 using System.Text.Json;
 using DynamicDnsClient.Configuration.Models;
 
@@ -14,10 +13,8 @@ public static class ConfigSetup
         WriteIndented = true,
     };
     
-    public static (string Id, AppConfig Config) GenerateConfig(string mockServerUrl)
+    public static AppConfig GenerateConfig(string id, string mockServerUrl)
     {
-        var id = GenerateWord();
-
         var config = new AppConfig(
             $"lastUpdatedPublicIp.{id}.txt",
             [
@@ -42,38 +39,6 @@ public static class ConfigSetup
         
         File.WriteAllText($"appsettings.{id}.json", JsonSerializer.Serialize(config, SerializerOptions));
 
-        return (id, config);
-    }
-
-    public static void CleanupConfig(params string[] ids)
-    {
-        foreach (var id in ids)
-        {
-            File.Delete($"appsettings.{id}.json");
-        }
-    }
-
-    private static string GenerateWord()
-    {
-        const string vowels = "aeiou";
-        const string consonants = "bcdfghjklmnpqrstvwxz";
-        
-        var nextCharacterIsVowel = Random.Shared.Next(2) == 1;
-        var numberOfVowels = Random.Shared.Next(3, 5);
-        var numberOfConsonants = numberOfVowels + (nextCharacterIsVowel ? Random.Shared.Next(2) : 0);
-
-        var wordLength = numberOfVowels + numberOfConsonants;
-        var builder = new StringBuilder(wordLength);
-
-        for (var i = 0; i < wordLength; i++)
-        {
-            builder.Append(nextCharacterIsVowel
-                ? vowels[Random.Shared.Next(vowels.Length)]
-                : consonants[Random.Shared.Next(consonants.Length)]);
-            
-            nextCharacterIsVowel = !nextCharacterIsVowel;
-        }
-        
-        return builder.ToString();
+        return config;
     }
 }

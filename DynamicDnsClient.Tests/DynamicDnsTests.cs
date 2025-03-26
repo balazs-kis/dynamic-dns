@@ -11,28 +11,29 @@ using Xunit.Internal;
 
 namespace DynamicDnsClient.Tests;
 
-public class Tests : IDisposable
+public class DynamicDnsTests : IDisposable
 {
     private readonly CancellationToken _ct;
     private readonly WireMockServer _mockServer;
-    private readonly string _runId;
+    private readonly ConfigReader _configReader;
     private readonly AppConfig _runConfig;
     private readonly DynamicDns _dynamicDns;
 
-    public Tests()
+    public DynamicDnsTests()
     {
+        var runId = DataGenerator.GenerateWord();
+        
         _ct = TestContext.Current.CancellationToken;
-        
         _mockServer = WireMockServer.Start();
-        (_runId, _runConfig) = ConfigSetup.GenerateConfig(_mockServer.Urls[0]);
+        _runConfig = ConfigSetup.GenerateConfig(runId, _mockServer.Urls[0]);
+        _configReader = new ConfigReader(runId);
         
-        var configReader = new ConfigReader(_runId);
         var httpClient = new HttpClient();
-        var publicIpClient = new PublicIpHttpClient(httpClient, configReader);
-        var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, configReader);
-        var persistentStateHandler = new PersistentSateHandler(configReader);
+        var publicIpClient = new PublicIpHttpClient(httpClient, _configReader);
+        var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, _configReader);
+        var persistentStateHandler = new PersistentSateHandler(_configReader);
         
-        _dynamicDns = new DynamicDns(configReader, publicIpClient, dynamicDnsClient, persistentStateHandler);
+        _dynamicDns = new DynamicDns(_configReader, publicIpClient, dynamicDnsClient, persistentStateHandler);
     }
 
     [Fact]
@@ -113,7 +114,7 @@ public class Tests : IDisposable
     public void Dispose()
     {
         _mockServer.Stop();
-        ConfigSetup.CleanupConfig(_runId);
+        File.Delete(_configReader.AppConfigPath);
         File.Delete(_runConfig.SavedStateFilePath);
     }
 }

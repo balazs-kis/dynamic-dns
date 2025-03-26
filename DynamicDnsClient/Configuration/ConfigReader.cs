@@ -9,13 +9,13 @@ public class ConfigReader : IConfigReader
     private const string AppSettingsName = "appsettings";
     private const string AppSettingsExtension = ".json";
     
-    private readonly string _appConfigPath;
+    public string AppConfigPath { get; }
 
     private AppConfig? _appConfig;
     
     public ConfigReader(string? environment = null)
     {
-        _appConfigPath = string.IsNullOrWhiteSpace(environment)
+        AppConfigPath = string.IsNullOrWhiteSpace(environment)
             ? $"{AppSettingsName}{AppSettingsExtension}"
             : $"{AppSettingsName}.{environment}{AppSettingsExtension}";
     }
@@ -30,7 +30,7 @@ public class ConfigReader : IConfigReader
         AppConfig? configuration;
         try
         {
-            var configJson = await File.ReadAllTextAsync(_appConfigPath);
+            var configJson = await File.ReadAllTextAsync(AppConfigPath);
             configuration = JsonSerializer.Deserialize(configJson, AppConfigContext.Default.AppConfig);
         }
         catch (Exception ex)
