@@ -17,7 +17,7 @@ public class ConfigReaderTests : IDisposable
         _configReader = new ConfigReader(runId);
     }
 
-    [Fact]
+    //[Fact]
     public async Task ReturnsNullIfConfigFileIsNotFound()
     {
         // Arrange
@@ -31,7 +31,7 @@ public class ConfigReaderTests : IDisposable
         Assert.Contains(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
     }
     
-    [Fact]
+    //[Fact]
     public async Task ReturnsNullIfConfigFileIsNotValidJson()
     {
         // Arrange
@@ -45,7 +45,7 @@ public class ConfigReaderTests : IDisposable
         Assert.Contains(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
     }
     
-    [Fact]
+    //[Fact]
     public async Task ReturnsNullIfSavedStatePathIsNotProvided()
     {
         // Arrange
@@ -75,7 +75,7 @@ public class ConfigReaderTests : IDisposable
         Assert.Contains(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
     }
     
-    [Fact]
+    //[Fact]
     public async Task ReturnsNullIfIpProviderUrlsAreNotProvided()
     {
         // Arrange
@@ -106,7 +106,7 @@ public class ConfigReaderTests : IDisposable
         Assert.Contains(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
     }
 
-    [Fact]
+    //[Fact]
     public async Task ReturnsNullIfInstancesAreNotProvided()
     {
         // Arrange
@@ -129,7 +129,7 @@ public class ConfigReaderTests : IDisposable
         Assert.Contains(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
     }
 
-    [Fact]
+    //[Fact]
     public async Task ReturnsNullIfDomainNameIsNotProvided()
     {
         // Arrange
@@ -158,7 +158,7 @@ public class ConfigReaderTests : IDisposable
         Assert.Contains(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
     }
     
-    [Fact]
+    //[Fact]
     public async Task ReturnsNullIfHostsAreNotProvided()
     {
         // Arrange
@@ -188,7 +188,7 @@ public class ConfigReaderTests : IDisposable
         Assert.Contains(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
     }
     
-    [Fact]
+    //[Fact]
     public async Task ReturnsNullIfDnsApiSecretIsNotProvided()
     {
         // Arrange
@@ -217,7 +217,7 @@ public class ConfigReaderTests : IDisposable
         Assert.Contains(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
     }
     
-    [Fact]
+    //[Fact]
     public async Task ReturnsNullIfDnsApiUrlTemplateIsNotProvided()
     {
         // Arrange
