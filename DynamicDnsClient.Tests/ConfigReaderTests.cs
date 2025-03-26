@@ -59,7 +59,7 @@ public class ConfigReaderTests : IDisposable
                   "domainName": "domain.eu",
                   "hosts": ["@", "*"],
                   "dnsApiSecret": "ddns-secret",
-                  "dnsApiUrlTemplate": "https://dynamicdns.park-your-domain.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
                   "dnsApiSuccessMessage": "success-message"
                 }
               ]
@@ -90,7 +90,7 @@ public class ConfigReaderTests : IDisposable
                   "domainName": "domain.eu",
                   "hosts": ["@", "*"],
                   "dnsApiSecret": "ddns-secret",
-                  "dnsApiUrlTemplate": "https://dynamicdns.park-your-domain.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
                   "dnsApiSuccessMessage": "success-message"
                 }
               ]
@@ -142,7 +142,7 @@ public class ConfigReaderTests : IDisposable
                 {
                   "hosts": ["@", "*"],
                   "dnsApiSecret": "ddns-secret",
-                  "dnsApiUrlTemplate": "https://dynamicdns.park-your-domain.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
                   "dnsApiSuccessMessage": "success-message"
                 }
               ]
@@ -172,7 +172,7 @@ public class ConfigReaderTests : IDisposable
                   "domainName": "domain.eu",
                   "hosts": [],
                   "dnsApiSecret": "ddns-secret",
-                  "dnsApiUrlTemplate": "https://dynamicdns.park-your-domain.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
                   "dnsApiSuccessMessage": "success-message"
                 }
               ]
@@ -201,7 +201,7 @@ public class ConfigReaderTests : IDisposable
                 {
                   "domainName": "domain.eu",
                   "hosts": ["@", "*"],
-                  "dnsApiUrlTemplate": "https://dynamicdns.park-your-domain.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
                   "dnsApiSuccessMessage": "success-message"
                 }
               ]
