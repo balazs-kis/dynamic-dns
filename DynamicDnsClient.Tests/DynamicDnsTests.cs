@@ -15,6 +15,7 @@ public class DynamicDnsTests : IDisposable
 {
     private readonly CancellationToken _ct;
     private readonly WireMockServer _mockServer;
+    private readonly ConsoleLogger _logger;
     private readonly ConfigReader _configReader;
     private readonly AppConfig _runConfig;
     private readonly DynamicDns _dynamicDns;
@@ -24,16 +25,17 @@ public class DynamicDnsTests : IDisposable
         var runId = DataGenerator.GenerateWord();
         
         _ct = TestContext.Current.CancellationToken;
+        _logger = new ConsoleLogger(true);
         _mockServer = WireMockServer.Start();
         _runConfig = ConfigSetup.GenerateConfig(runId, _mockServer.Urls[0]);
-        _configReader = new ConfigReader(runId);
+        _configReader = new ConfigReader(_logger, runId);
         
         var httpClient = new HttpClient();
-        var publicIpClient = new PublicIpHttpClient(httpClient, _configReader);
-        var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, _configReader);
-        var persistentStateHandler = new PersistentSateHandler(_configReader);
+        var publicIpClient = new PublicIpHttpClient(httpClient, _configReader, _logger);
+        var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, _configReader, _logger);
+        var persistentStateHandler = new PersistentSateHandler(_configReader, _logger);
         
-        _dynamicDns = new DynamicDns(_configReader, publicIpClient, dynamicDnsClient, persistentStateHandler);
+        _dynamicDns = new DynamicDns(_configReader, publicIpClient, dynamicDnsClient, persistentStateHandler, _logger);
     }
 
     [Fact]
@@ -53,7 +55,7 @@ public class DynamicDnsTests : IDisposable
         var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
         
         Assert.Equal(ip, savedIp);
-        Assert.DoesNotContain(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
+        Assert.DoesNotContain(_logger.Logs, msg => msg.Contains("[ERR]"));
         GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
     }
     
@@ -76,7 +78,7 @@ public class DynamicDnsTests : IDisposable
         var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
         
         Assert.Equal(ip, savedIp);
-        Assert.DoesNotContain(ConsoleLogger.Logs, msg => msg.Contains("[ERR]"));
+        Assert.DoesNotContain(_logger.Logs, msg => msg.Contains("[ERR]"));
         GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
     }
 

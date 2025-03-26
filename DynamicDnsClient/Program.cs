@@ -4,23 +4,21 @@ using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Logging;
 using DynamicDnsClient.Saving;
 
-if (args.Contains("--silent") || args.Contains("-s"))
-{
-    ConsoleLogger.TraceEnabled = false;
-}
+var traceDisabled = args.Contains("--silent") || args.Contains("-s");
+var logger = new ConsoleLogger(!traceDisabled);
 
 try
 {
-    var configReader = new ConfigReader();
+    var configReader = new ConfigReader(logger);
     var httpClient = new HttpClient();
-    var publicIpClient = new PublicIpHttpClient(httpClient, configReader);
-    var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, configReader);
-    var persistentStateHandler = new PersistentSateHandler(configReader);
+    var publicIpClient = new PublicIpHttpClient(httpClient, configReader, logger);
+    var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, configReader, logger);
+    var persistentStateHandler = new PersistentSateHandler(configReader, logger);
 
-    var dynamicDns = new DynamicDns(configReader, publicIpClient, dynamicDnsClient, persistentStateHandler);
+    var dynamicDns = new DynamicDns(configReader, publicIpClient, dynamicDnsClient, persistentStateHandler, logger);
     await dynamicDns.UpdateIpAddressesAsync();
 }
 catch (Exception ex)
 {
-    ConsoleLogger.LogError($"Uncaught error during execution. {ex.GetType().Name}: {ex.Message}");
+    logger.LogError($"Uncaught error during execution. {ex.GetType().Name}: {ex.Message}");
 }

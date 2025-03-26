@@ -8,11 +8,13 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
 {
     private readonly HttpClient _httpClient;
     private readonly IConfigReader _configReader;
+    private readonly ILogger _logger;
 
-    public DynamicDnsHttpClient(HttpClient httpClient, IConfigReader configReader)
+    public DynamicDnsHttpClient(HttpClient httpClient, IConfigReader configReader, ILogger logger)
     {
         _httpClient = httpClient;
         _configReader = configReader;
+        _logger = logger;
     }
     
     public async Task<bool> UpdateIpForDnsAsync(string newIp)
@@ -39,7 +41,7 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
                     using var response = await _httpClient.SendAsync(request);
                     if (!response.IsSuccessStatusCode)
                     {
-                        ConsoleLogger.LogWarning(
+                        _logger.LogWarning(
                             $"Could not update IP for '{host}.{instance.DomainName}' with IP {newIp}. " +
                             $"Response status code: {response.StatusCode}");
 
@@ -51,7 +53,7 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
                         var responseContent = await response.Content.ReadAsStringAsync();
                         if (!responseContent.Contains(instance.DnsApiSuccessMessage))
                         {
-                            ConsoleLogger.LogWarning(
+                            _logger.LogWarning(
                                 $"Could not update IP for '{host}.{instance.DomainName}' with IP {newIp}. " +
                                 "Response status code was OK " +
                                 $"but the response did not contain '{instance.DnsApiSuccessMessage}'");
@@ -60,12 +62,12 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
                         }
                     }
 
-                    ConsoleLogger.LogInformation(
+                    _logger.LogInformation(
                         $"Successfully updated '{host}.{instance.DomainName}' with IP {newIp}");
                 }
                 catch (Exception ex)
                 {
-                    ConsoleLogger.LogWarning(
+                    _logger.LogWarning(
                         $"Could not update IP for '{host}.{instance.DomainName}' with IP {newIp}. " +
                         $"{ex.GetType().Name}: {ex.Message}");
 

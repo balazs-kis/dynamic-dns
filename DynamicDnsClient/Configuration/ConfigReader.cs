@@ -6,6 +6,7 @@ namespace DynamicDnsClient.Configuration;
 
 public class ConfigReader : IConfigReader
 {
+    private readonly ILogger _logger;
     private const string AppSettingsName = "appsettings";
     private const string AppSettingsExtension = ".json";
     
@@ -13,8 +14,10 @@ public class ConfigReader : IConfigReader
 
     private AppConfig? _appConfig;
     
-    public ConfigReader(string? environment = null)
+    public ConfigReader(ILogger logger, string? environment = null)
     {
+        _logger = logger;
+
         AppConfigPath = string.IsNullOrWhiteSpace(environment)
             ? $"{AppSettingsName}{AppSettingsExtension}"
             : $"{AppSettingsName}.{environment}{AppSettingsExtension}";
@@ -35,13 +38,13 @@ public class ConfigReader : IConfigReader
         }
         catch (Exception ex)
         {
-            ConsoleLogger.LogError($"The configuration was not readable. {ex.GetType().Name}: {ex.Message}");
+            _logger.LogError($"The configuration was not readable. {ex.GetType().Name}: {ex.Message}");
             return null;
         }
 
         if (configuration is null)
         {
-            ConsoleLogger.LogError("The configuration was not readable.");
+            _logger.LogError("The configuration was not readable.");
             return null;
         }
 
@@ -52,7 +55,7 @@ public class ConfigReader : IConfigReader
             return configuration;
         }
 
-        ConsoleLogger.LogError($"Required item(s) are missing from the configuration: {problem}");
+        _logger.LogError($"Required item(s) are missing from the configuration: {problem}");
         return null;
     }
 

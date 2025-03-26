@@ -2,14 +2,19 @@
 
 namespace DynamicDnsClient.Logging;
 
-public static class ConsoleLogger
+public class ConsoleLogger : ILogger
 {
-    private static readonly List<string> LogList = new(25);
+    private readonly List<string> LogList = new(25);
     
-    public static bool TraceEnabled { get; set; } = true;
-    public static IReadOnlyCollection<string> Logs => LogList;
+    public bool TraceEnabled { get; }
+    public IReadOnlyCollection<string> Logs => LogList;
 
-    public static void LogTrace(string message)
+    public ConsoleLogger(bool traceEnabled)
+    {
+        TraceEnabled = traceEnabled;
+    }
+
+    public void LogTrace(string message)
     {
         if (TraceEnabled)
         {
@@ -17,13 +22,13 @@ public static class ConsoleLogger
         }
     }
 
-    public static void LogInformation(string message) => Log("INF", ConsoleColor.Green, message);
+    public void LogInformation(string message) => Log("INF", ConsoleColor.Green, message);
     
-    public static void LogWarning(string message) => Log("WRN", ConsoleColor.Yellow, message);
+    public void LogWarning(string message) => Log("WRN", ConsoleColor.Yellow, message);
 
-    public static void LogError(string message) => Log("ERR", ConsoleColor.Red, message);
+    public void LogError(string message) => Log("ERR", ConsoleColor.Red, message);
 
-    private static void Log(string level, ConsoleColor levelColor, string message)
+    private void Log(string level, ConsoleColor levelColor, string message)
     {
         const string timeFormat = "yyyy-MM-dd HH:mm:ss.fff";
         

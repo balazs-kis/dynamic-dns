@@ -7,11 +7,13 @@ public class PublicIpHttpClient : IPublicIpHttpClient
 {
     private readonly HttpClient _httpClient;
     private readonly IConfigReader _configReader;
+    private readonly ILogger _logger;
 
-    public PublicIpHttpClient(HttpClient httpClient, IConfigReader configReader)
+    public PublicIpHttpClient(HttpClient httpClient, IConfigReader configReader, ILogger logger)
     {
         _httpClient = httpClient;
         _configReader = configReader;
+        _logger = logger;
     }
     
     public async Task<string?> GetPublicIpAsync()
@@ -30,7 +32,7 @@ public class PublicIpHttpClient : IPublicIpHttpClient
                 using var response = await _httpClient.SendAsync(request);
                 if (!response.IsSuccessStatusCode)
                 {
-                    ConsoleLogger.LogWarning(
+                    _logger.LogWarning(
                         $"Could not obtain public IP address from '{ipProviderUrl}'. " +
                         $"Status code: {response.StatusCode}");
                     
@@ -39,16 +41,16 @@ public class PublicIpHttpClient : IPublicIpHttpClient
                     
                 var publicIp = (await response.Content.ReadAsStringAsync()).TrimEnd();
 
-                ConsoleLogger.LogTrace($"Public IP obtained from '{ipProviderUrl}': {publicIp}");
+                _logger.LogTrace($"Public IP obtained from '{ipProviderUrl}': {publicIp}");
                 return publicIp;
             }
             
-            ConsoleLogger.LogWarning("Could not obtain public IP address from any configured providers.");
+            _logger.LogWarning("Could not obtain public IP address from any configured providers.");
             return null;
         }
         catch (Exception ex)
         {
-            ConsoleLogger.LogWarning($"Could not obtain public IP address. {ex.GetType().Name}: {ex.Message}");
+            _logger.LogWarning($"Could not obtain public IP address. {ex.GetType().Name}: {ex.Message}");
             return null;
         }
     }
