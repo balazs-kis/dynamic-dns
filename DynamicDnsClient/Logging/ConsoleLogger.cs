@@ -4,10 +4,8 @@ namespace DynamicDnsClient.Logging;
 
 public class ConsoleLogger : ILogger
 {
-    private readonly List<string> LogList = new(25);
-    
     public bool TraceEnabled { get; }
-    public IReadOnlyCollection<string> Logs => LogList;
+    public IList<string>? Logs { get; set; }
 
     public ConsoleLogger(bool traceEnabled)
     {
@@ -53,6 +51,6 @@ public class ConsoleLogger : ILogger
 
         Console.ForegroundColor = originalColor;
         
-        LogList.Add(messageBuilder.ToString());
+        Logs?.Add(messageBuilder.ToString());
     }
 }

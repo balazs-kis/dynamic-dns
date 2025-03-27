@@ -17,235 +17,167 @@ public class ConfigReaderTests : IDisposable
         _ct = TestContext.Current.CancellationToken;
         _logger = new ConsoleLogger(true);
         _configReader = new ConfigReader(_logger, runId);
+
+        _logger.Logs = new List<string>(25);
     }
 
     [Fact]
-    public async Task ReturnsNullIfConfigFileIsNotFound()
-    {
-        // Arrange
-        // No setup is needed.
-        
-        // Act
-        var config = await _configReader.ReadConfigurationAsync();
+    public async Task ReturnsNullIfConfigFileIsNotFound() => await TestInvalidConfig(null);
 
-        // Assert
-        Assert.Null(config);
-        Assert.Contains(_logger.Logs, msg => msg.Contains("[ERR]"));
-    }
-    
     [Fact]
-    public async Task ReturnsNullIfConfigFileIsNotValidJson()
-    {
-        // Arrange
-        await File.WriteAllTextAsync(_configReader.AppConfigPath, "Not a valid json string.", _ct);
-        
-        // Act
-        var config = await _configReader.ReadConfigurationAsync();
+    public async Task ReturnsNullIfConfigFileIsNotValidJson() => await TestInvalidConfig("Not a valid json string.");
 
-        // Assert
-        Assert.Null(config);
-        Assert.Contains(_logger.Logs, msg => msg.Contains("[ERR]"));
-    }
-    
     [Fact]
-    public async Task ReturnsNullIfSavedStatePathIsNotProvided()
-    {
-        // Arrange
-        await File.WriteAllTextAsync(
-            _configReader.AppConfigPath,
-            """
+    public async Task ReturnsNullIfConfigFileContainsNull() => await TestInvalidConfig("null");
+
+    [Fact]
+    public async Task ReturnsNullIfSavedStatePathIsNotProvided() => await TestInvalidConfig(
+        """
+        {
+          "ipProviderUrls": [ "https://ip-provider-api.org" ],
+          "instances": [
             {
-              "ipProviderUrls": [ "https://ip-provider-api.org" ],
-              "instances": [
+              "domainName": "domain.eu",
+              "hosts": ["@", "*"],
+              "dnsApiSecret": "ddns-secret",
+              "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+              "dnsApiSuccessMessage": "success-message"
+            }
+          ]
+        }
+        """);
+
+    [Fact]
+    public async Task ReturnsNullIfDomainNameIsNotProvided() => await TestInvalidConfig(
+        """
+        {
+          "ipProviderUrls": [ "https://ip-provider-api.org" ],
+          "instances": [
+            {
+              "hosts": ["@", "*"],
+              "dnsApiSecret": "ddns-secret",
+              "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+              "dnsApiSuccessMessage": "success-message"
+            }
+          ]
+        }
+        """);
+
+    [Fact]
+    public async Task ReturnsNullIfDnsApiSecretIsNotProvided() => await TestInvalidConfig(
+        """
+        {
+          "ipProviderUrls": [ "https://ip-provider-api.org" ],
+          "instances": [
+            {
+              "domainName": "domain.eu",
+              "hosts": ["@", "*"],
+              "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+              "dnsApiSuccessMessage": "success-message"
+            }
+          ]
+        }
+        """);
+
+    [Fact]
+    public async Task ReturnsNullIfDnsApiUrlTemplateIsNotProvided() => await TestInvalidConfig(
+        """
+        {
+          "ipProviderUrls": [ "https://ip-provider-api.org" ],
+          "instances": [
+            {
+              "domainName": "domain.eu",
+              "hosts": ["@", "*"],
+              "dnsApiSecret": "ddns-secret",
+              "dnsApiSuccessMessage": "success-message"
+            }
+          ]
+        }
+        """);
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReturnsNullIfIpProviderUrlsAreNotProvided(bool isNull)
+    {
+        var ipProviderUrls = isNull ? string.Empty : "\"ipProviderUrls\": [],";
+        var configContent =
+            $$"""
                 {
-                  "domainName": "domain.eu",
-                  "hosts": ["@", "*"],
-                  "dnsApiSecret": "ddns-secret",
-                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
-                  "dnsApiSuccessMessage": "success-message"
+                  "savedStateFilePath": "lastUpdatedPublicIp.txt",
+                  {{ipProviderUrls}}
+                  "instances": [
+                    {
+                      "domainName": "domain.eu",
+                      "hosts": ["@", "*"],
+                      "dnsApiSecret": "ddns-secret",
+                      "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+                      "dnsApiSuccessMessage": "success-message"
+                    }
+                  ]
                 }
-              ]
-            }
-            """,
-            _ct);
-        
-        // Act
-        var config = await _configReader.ReadConfigurationAsync();
+              """;
 
-        // Assert
-        Assert.Null(config);
-        Assert.Contains(_logger.Logs, msg => msg.Contains("[ERR]"));
-    }
-    
-    [Fact]
-    public async Task ReturnsNullIfIpProviderUrlsAreNotProvided()
-    {
-        // Arrange
-        await File.WriteAllTextAsync(
-            _configReader.AppConfigPath,
-            """
-            {
-              "savedStateFilePath": "lastUpdatedPublicIp.txt",
-              "ipProviderUrls": [],
-              "instances": [
-                {
-                  "domainName": "domain.eu",
-                  "hosts": ["@", "*"],
-                  "dnsApiSecret": "ddns-secret",
-                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
-                  "dnsApiSuccessMessage": "success-message"
-                }
-              ]
-            }
-            """,
-            _ct);
-        
-        // Act
-        var config = await _configReader.ReadConfigurationAsync();
-
-        // Assert
-        Assert.Null(config);
-        Assert.Contains(_logger.Logs, msg => msg.Contains("[ERR]"));
+        await TestInvalidConfig(configContent);
     }
 
-    [Fact]
-    public async Task ReturnsNullIfInstancesAreNotProvided()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReturnsNullIfInstancesAreNotProvided(bool isNull)
     {
-        // Arrange
-        await File.WriteAllTextAsync(
-            _configReader.AppConfigPath,
-            """
-            {
-              "savedStateFilePath": "lastUpdatedPublicIp.txt",
-              "ipProviderUrls": [ "https://ip-provider-api.org" ],
-              "instances": []
-            }
-            """,
-            _ct);
-        
-        // Act
-        var config = await _configReader.ReadConfigurationAsync();
+        var instances = isNull ? string.Empty : "\"instances\": []";
+        var configContent =
+            $$"""
+              {
+                "savedStateFilePath": "lastUpdatedPublicIp.txt",
+                "ipProviderUrls": [ "https://ip-provider-api.org" ],
+                {{instances}}
+              }
+              """;
 
-        // Assert
-        Assert.Null(config);
-        Assert.Contains(_logger.Logs, msg => msg.Contains("[ERR]"));
+        await TestInvalidConfig(configContent);
     }
 
-    [Fact]
-    public async Task ReturnsNullIfDomainNameIsNotProvided()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReturnsNullIfHostsAreNotProvided(bool isNull)
     {
-        // Arrange
-        await File.WriteAllTextAsync(
-            _configReader.AppConfigPath,
-            """
-            {
-              "ipProviderUrls": [ "https://ip-provider-api.org" ],
-              "instances": [
-                {
-                  "hosts": ["@", "*"],
-                  "dnsApiSecret": "ddns-secret",
-                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
-                  "dnsApiSuccessMessage": "success-message"
-                }
-              ]
-            }
-            """,
-            _ct);
-        
-        // Act
-        var config = await _configReader.ReadConfigurationAsync();
+        var hosts = isNull ? string.Empty : "\"hosts\": [],";
+        var configContent =
+            $$"""
+              {
+                "ipProviderUrls": [ "https://ip-provider-api.org" ],
+                "instances": [
+                  {
+                    "domainName": "domain.eu",
+                    {{hosts}}
+                    "dnsApiSecret": "ddns-secret",
+                    "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
+                    "dnsApiSuccessMessage": "success-message"
+                  }
+                ]
+              }
+              """;
 
-        // Assert
-        Assert.Null(config);
-        Assert.Contains(_logger.Logs, msg => msg.Contains("[ERR]"));
+        await TestInvalidConfig(configContent);
     }
-    
-    [Fact]
-    public async Task ReturnsNullIfHostsAreNotProvided()
+
+    private async Task TestInvalidConfig(string? configContent)
     {
         // Arrange
-        await File.WriteAllTextAsync(
-            _configReader.AppConfigPath,
-            """
-            {
-              "ipProviderUrls": [ "https://ip-provider-api.org" ],
-              "instances": [
-                {
-                  "domainName": "domain.eu",
-                  "hosts": [],
-                  "dnsApiSecret": "ddns-secret",
-                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
-                  "dnsApiSuccessMessage": "success-message"
-                }
-              ]
-            }
-            """,
-            _ct);
-        
+        if (configContent is not null)
+        {
+            await File.WriteAllTextAsync(_configReader.AppConfigPath, configContent, _ct);
+        }
+
         // Act
         var config = await _configReader.ReadConfigurationAsync();
 
         // Assert
         Assert.Null(config);
-        Assert.Contains(_logger.Logs, msg => msg.Contains("[ERR]"));
-    }
-    
-    [Fact]
-    public async Task ReturnsNullIfDnsApiSecretIsNotProvided()
-    {
-        // Arrange
-        await File.WriteAllTextAsync(
-            _configReader.AppConfigPath,
-            """
-            {
-              "ipProviderUrls": [ "https://ip-provider-api.org" ],
-              "instances": [
-                {
-                  "domainName": "domain.eu",
-                  "hosts": ["@", "*"],
-                  "dnsApiUrlTemplate": "https://ddns.com/update?host={Host}&domain={Domain}&password={Secret}&ip={NewIp}",
-                  "dnsApiSuccessMessage": "success-message"
-                }
-              ]
-            }
-            """,
-            _ct);
-        
-        // Act
-        var config = await _configReader.ReadConfigurationAsync();
-
-        // Assert
-        Assert.Null(config);
-        Assert.Contains(_logger.Logs, msg => msg.Contains("[ERR]"));
-    }
-    
-    [Fact]
-    public async Task ReturnsNullIfDnsApiUrlTemplateIsNotProvided()
-    {
-        // Arrange
-        await File.WriteAllTextAsync(
-            _configReader.AppConfigPath,
-            """
-            {
-              "ipProviderUrls": [ "https://ip-provider-api.org" ],
-              "instances": [
-                {
-                  "domainName": "domain.eu",
-                  "hosts": ["@", "*"],
-                  "dnsApiSecret": "ddns-secret",
-                  "dnsApiSuccessMessage": "success-message"
-                }
-              ]
-            }
-            """,
-            _ct);
-        
-        // Act
-        var config = await _configReader.ReadConfigurationAsync();
-
-        // Assert
-        Assert.Null(config);
-        Assert.Contains(_logger.Logs, msg => msg.Contains("[ERR]"));
+        Assert.Contains(_logger.Logs!, msg => msg.Contains("[ERR]"));
     }
 
     public void Dispose()

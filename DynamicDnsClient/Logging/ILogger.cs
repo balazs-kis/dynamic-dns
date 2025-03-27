@@ -3,7 +3,7 @@
 public interface ILogger
 {
     bool TraceEnabled { get; }
-    IReadOnlyCollection<string> Logs { get; }
+    IList<string>? Logs { get; set; }
 
     void LogTrace(string message);
     void LogInformation(string message);

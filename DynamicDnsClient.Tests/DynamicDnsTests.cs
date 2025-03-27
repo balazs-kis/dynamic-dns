@@ -29,6 +29,8 @@ public class DynamicDnsTests : IDisposable
         _mockServer = WireMockServer.Start();
         _runConfig = ConfigSetup.GenerateConfig(runId, _mockServer.Urls[0]);
         _configReader = new ConfigReader(_logger, runId);
+
+        _logger.Logs = new List<string>(25);
         
         var httpClient = new HttpClient();
         var publicIpClient = new PublicIpHttpClient(httpClient, _configReader, _logger);
@@ -55,7 +57,7 @@ public class DynamicDnsTests : IDisposable
         var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
         
         Assert.Equal(ip, savedIp);
-        Assert.DoesNotContain(_logger.Logs, msg => msg.Contains("[ERR]"));
+        Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
         GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
     }
     
@@ -78,7 +80,7 @@ public class DynamicDnsTests : IDisposable
         var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
         
         Assert.Equal(ip, savedIp);
-        Assert.DoesNotContain(_logger.Logs, msg => msg.Contains("[ERR]"));
+        Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
         GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
     }
 
