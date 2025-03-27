@@ -60,7 +60,7 @@ public class DynamicDnsTests : IDisposable
         Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
         GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
     }
-    
+
     [Fact]
     public async Task UpdatesAllInstancesWithNewIpWhenOnlyOnePublicIpProviderIsAvailable()
     {
@@ -82,6 +82,52 @@ public class DynamicDnsTests : IDisposable
         Assert.Equal(ip, savedIp);
         Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
         GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
+    }
+
+    [Fact]
+    public async Task DoesNotUpdateWhenThereIsNoPublicIpChange()
+    {
+        // Arrange
+        const string ip = "62.59.90.127";
+        
+        SetUpPublicIpApis(ip);
+        SetUpDdnsApis();
+
+        await File.WriteAllTextAsync(_runConfig.SavedStateFilePath, ip, _ct);
+        
+        // Act
+        await _dynamicDns!.UpdateIpAddressesAsync();
+        
+        // Assert
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage.AbsoluteUrl).ToArray();
+        var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
+        
+        Assert.Equal(ip, savedIp);
+        Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
+        GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.DoesNotContain(expectedUrl, requestedUrls));
+    }
+
+    [Fact]
+    public async Task DoesNotRunWhenThereIsNoValidConfiguration()
+    {
+        // Arrange
+        const string ip = "62.59.90.127";
+        
+        SetUpPublicIpApis(ip);
+        SetUpDdnsApis();
+        
+        File.Delete(_configReader.AppConfigPath);
+        
+        // Act
+        await _dynamicDns!.UpdateIpAddressesAsync();
+        
+        // Assert
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage.AbsoluteUrl).ToArray();
+        var hasSavedIp = File.Exists(_runConfig.SavedStateFilePath);
+        
+        Assert.False(hasSavedIp);
+        Assert.Contains(_logger.Logs!, msg => msg.Contains("[ERR]"));
+        Assert.Empty(requestedUrls);
     }
 
     private IEnumerable<string> GetExpectedUrlCalls(string newIp)

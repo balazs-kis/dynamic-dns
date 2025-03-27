@@ -32,7 +32,7 @@ public class DynamicDns
         var config = await _configReader.ReadConfigurationAsync();
         if (config is null)
         {
-            _logger.LogWarning($"Dynamic DNS client is exiting due to invalid configuration.{Environment.NewLine}");
+            _logger.LogError($"Dynamic DNS client is exiting due to invalid configuration.{Environment.NewLine}");
             return;
         }
         
