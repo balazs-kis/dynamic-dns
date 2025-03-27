@@ -126,13 +126,13 @@ public class ConfigReaderTests : IDisposable
     [InlineData(false)]
     public async Task ReturnsNullIfInstancesAreNotProvided(bool isNull)
     {
-        var instances = isNull ? string.Empty : "\"instances\": []";
+        var instances = isNull ? string.Empty : "\"instances\": [],";
         var configContent =
             $$"""
               {
-                "savedStateFilePath": "lastUpdatedPublicIp.txt",
-                "ipProviderUrls": [ "https://ip-provider-api.org" ],
                 {{instances}}
+                "savedStateFilePath": "lastUpdatedPublicIp.txt",
+                "ipProviderUrls": [ "https://ip-provider-api.org" ]
               }
               """;
 
