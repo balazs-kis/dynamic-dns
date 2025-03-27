@@ -1,52 +1,61 @@
-﻿using DynamicDnsClient.Logging;
+﻿using System.Text.Json;
+using DynamicDnsClient.Configuration.Models;
+using DynamicDnsClient.Logging;
 
 namespace DynamicDnsClient.Configuration;
 
-public static class ConfigReader
+public class ConfigReader : IConfigReader
 {
-    private const string ConfigPath = ".config";
-    private const char ConfigValueSeparator = '=';
-    private const char ConfigListSeparator = ',';
+    private readonly ILogger _logger;
+    private const string AppSettingsName = "appsettings";
+    private const string AppSettingsExtension = ".json";
+    
+    public string AppConfigPath { get; }
 
-    public static AppConfig? ReadConfiguration()
+    private AppConfig? _appConfig;
+    
+    public ConfigReader(ILogger logger, string? environment = null)
     {
-        AppConfig configuration;
+        _logger = logger;
 
+        AppConfigPath = string.IsNullOrWhiteSpace(environment)
+            ? $"{AppSettingsName}{AppSettingsExtension}"
+            : $"{AppSettingsName}.{environment}{AppSettingsExtension}";
+    }
+    
+    public async Task<AppConfig?> ReadConfigurationAsync()
+    {
+        if (_appConfig is not null)
+        {
+            return _appConfig;
+        }
+        
+        AppConfig? configuration;
         try
         {
-            var items = File.ReadAllLines(ConfigPath);
-
-            var configDictionary = items
-                .Select(i => i.Split(ConfigValueSeparator, 2))
-                .ToDictionary(i => i[0], i => i[1]);
-
-            configuration = new AppConfig
-            {
-                IpProviderUrls = configDictionary
-                    .GetValueOrDefault(nameof(AppConfig.IpProviderUrls))
-                    ?.Split(ConfigListSeparator),
-                DomainName = configDictionary.GetValueOrDefault(nameof(AppConfig.DomainName)),
-                Hosts = configDictionary
-                    .GetValueOrDefault(nameof(AppConfig.Hosts))
-                    ?.Split(ConfigListSeparator),
-                DnsApiUrlTemplate = configDictionary.GetValueOrDefault(nameof(AppConfig.DnsApiUrlTemplate)),
-                DnsApiSecret = configDictionary.GetValueOrDefault(nameof(AppConfig.DnsApiSecret)),
-                DnsApiSuccessMessage = configDictionary.GetValueOrDefault(nameof(AppConfig.DnsApiSuccessMessage)),
-            };
+            var configJson = await File.ReadAllTextAsync(AppConfigPath);
+            configuration = JsonSerializer.Deserialize(configJson, AppConfigContext.Default.AppConfig);
         }
         catch (Exception ex)
         {
-            ConsoleLogger.LogError($"The configuration was not readable. {ex.GetType().Name}: {ex.Message}");
+            _logger.LogError($"The configuration was not readable. {ex.GetType().Name}: {ex.Message}");
+            return null;
+        }
+
+        if (configuration is null)
+        {
+            _logger.LogError("The configuration was not readable.");
             return null;
         }
 
         var (isValid, problem) = ValidateConfiguration(configuration);
         if (isValid)
         {
+            _appConfig = configuration;
             return configuration;
         }
 
-        ConsoleLogger.LogError($"Required item(s) are missing from the configuration: {problem}");
+        _logger.LogError($"Required item(s) are missing from the configuration: {problem}");
         return null;
     }
 
@@ -54,30 +63,45 @@ public static class ConfigReader
     {
         var problems = new List<string>();
 
+        if (string.IsNullOrWhiteSpace(appConfig.SavedStateFilePath))
+        {
+            problems.Add("Saved state file path not specified");
+        }
+        
         if (appConfig.IpProviderUrls is null || appConfig.IpProviderUrls.Length == 0)
         {
             problems.Add("IP provider URL(s) not specified");
         }
         
-        if (string.IsNullOrWhiteSpace(appConfig.DomainName))
+        if (appConfig.Instances is null || appConfig.Instances.Length == 0)
         {
-            problems.Add("Domain name not specified");
+            problems.Add("Dynamic DNS instance(s) not specified");
         }
-
-        if (appConfig.Hosts is null || appConfig.Hosts.Length == 0)
+        else
         {
-            problems.Add("Host(s) are not specified");
-        }
+            foreach (var instance in appConfig.Instances)
+            {
+                if (string.IsNullOrWhiteSpace(instance.DomainName))
+                {
+                    problems.Add("Domain name not specified");
+                }
 
-        if (string.IsNullOrWhiteSpace(appConfig.DnsApiUrlTemplate))
-        {
-            problems.Add("DNS API URL template not specified");
-        }
+                if (instance.Hosts is null || instance.Hosts.Length == 0)
+                {
+                    problems.Add("Host(s) are not specified");
+                }
 
-        if (appConfig.DnsApiUrlTemplate?.Contains(AppConfig.DnsApiSecretPlaceholder) == true &&
-            string.IsNullOrWhiteSpace(appConfig.DnsApiSecret))
-        {
-            problems.Add("DNS API secret is needed but not specified");
+                if (string.IsNullOrWhiteSpace(instance.DnsApiUrlTemplate))
+                {
+                    problems.Add("DNS API URL template not specified");
+                }
+
+                if (instance.DnsApiUrlTemplate?.Contains(AppConfig.DnsApiSecretPlaceholder) == true &&
+                    string.IsNullOrWhiteSpace(instance.DnsApiSecret))
+                {
+                    problems.Add("DNS API secret is needed but not specified");
+                }
+            }
         }
 
         var problem = problems.Count > 0 ? string.Join(", ", problems) : null;

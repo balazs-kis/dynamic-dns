@@ -1,48 +1,24 @@
-﻿using DynamicDnsClient.Clients;
+﻿using DynamicDnsClient;
+using DynamicDnsClient.Clients;
 using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Logging;
 using DynamicDnsClient.Saving;
 
-if (args.Contains("--silent") || args.Contains("-s"))
+var traceDisabled = args.Contains("--silent") || args.Contains("-s");
+var logger = new ConsoleLogger(!traceDisabled);
+
+try
 {
-    ConsoleLogger.TraceEnabled = false;
+    var configReader = new ConfigReader(logger);
+    var httpClient = new HttpClient();
+    var publicIpClient = new PublicIpHttpClient(httpClient, configReader, logger);
+    var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, configReader, logger);
+    var persistentStateHandler = new PersistentSateHandler(configReader, logger);
+
+    var dynamicDns = new DynamicDns(configReader, publicIpClient, dynamicDnsClient, persistentStateHandler, logger);
+    await dynamicDns.UpdateIpAddressesAsync();
 }
-
-ConsoleLogger.LogTrace("Dynamic DNS client started.");
-
-var lastUpdatedPublicIp = FileOperations.GetLastUpdatedPublicIp();
-
-var config = ConfigReader.ReadConfiguration();
-if (config is null)
+catch (Exception ex)
 {
-    ConsoleLogger.LogWarning($"Dynamic DNS client is exiting due to invalid configuration.{Environment.NewLine}");
-    return;
-}
-
-using var httpClient = new HttpClient();
-
-var newPublicIp = await httpClient.GetPublicIp(config);
-if (newPublicIp is null)
-{
-    ConsoleLogger.LogTrace(
-        $"Dynamic DNS client is exiting due to being unable to obtain public IP.{Environment.NewLine}");
-    
-    return;
-}
-
-if (string.Equals(newPublicIp, lastUpdatedPublicIp))
-{
-    ConsoleLogger.LogTrace($"Dynamic DNS client is exiting: IP update is not needed.{Environment.NewLine}");
-    return;
-}
-
-if (await httpClient.UpdateIpForDns(config, newPublicIp))
-{
-    FileOperations.UpdateLastUpdatedPublicIp(newPublicIp);
-    ConsoleLogger.LogTrace($"Dynamic DNS client is exiting: run completed.{Environment.NewLine}");
-}
-else
-{
-    ConsoleLogger.LogTrace(
-        $"Dynamic DNS client is exiting due to being unable to update public IP.{Environment.NewLine}");
+    logger.LogError($"Uncaught error during execution. {ex.GetType().Name}: {ex.Message}");
 }

@@ -1,37 +1,56 @@
-﻿namespace DynamicDnsClient.Logging;
+﻿using System.Text;
 
-public static class ConsoleLogger
+namespace DynamicDnsClient.Logging;
+
+public class ConsoleLogger : ILogger
 {
-    public static bool TraceEnabled { get; set; } = true;
+    public bool TraceEnabled { get; }
+    public IList<string>? Logs { get; set; }
 
-    public static void LogTrace(string message)
+    public ConsoleLogger(bool traceEnabled)
+    {
+        TraceEnabled = traceEnabled;
+    }
+
+    public void LogTrace(string message)
     {
         if (TraceEnabled)
         {
-            Log("TRACE", ConsoleColor.Gray, message);
+            Log("TRC", ConsoleColor.Gray, message);
         }
     }
 
-    public static void LogInformation(string message) => Log("INFO", ConsoleColor.Green, message);
+    public void LogInformation(string message) => Log("INF", ConsoleColor.Green, message);
     
-    public static void LogWarning(string message) => Log("WARN", ConsoleColor.Yellow, message);
+    public void LogWarning(string message) => Log("WRN", ConsoleColor.Yellow, message);
 
-    public static void LogError(string message) => Log("ERROR", ConsoleColor.Red, message);
+    public void LogError(string message) => Log("ERR", ConsoleColor.Red, message);
 
-    private static void Log(string level, ConsoleColor levelColor, string message)
+    private void Log(string level, ConsoleColor levelColor, string message)
     {
         const string timeFormat = "yyyy-MM-dd HH:mm:ss.fff";
+        
+        var messageBuilder = new StringBuilder();
+        var timePart = $"{DateTime.Now.ToString(timeFormat)}  ";
+        var levelPart = $"[{level}]";
+        var messagePart = $"  {message}";
+        
         var originalColor = Console.ForegroundColor;
-
-        Console.ForegroundColor = ConsoleColor.White;
-        Console.Write($"{DateTime.Now.ToString(timeFormat)}  ");
         
+        messageBuilder.Append(timePart);
+        Console.ForegroundColor = ConsoleColor.White;
+        Console.Write(timePart);
+        
+        messageBuilder.Append(levelPart);
         Console.ForegroundColor = levelColor;
-        Console.Write($"[{level}]".PadRight(7));
+        Console.Write(levelPart);
         
+        messageBuilder.Append(messagePart);
         Console.ForegroundColor = ConsoleColor.White;
-        Console.WriteLine($"  {message}");
+        Console.WriteLine(messagePart);
 
         Console.ForegroundColor = originalColor;
+        
+        Logs?.Add(messageBuilder.ToString());
     }
 }
