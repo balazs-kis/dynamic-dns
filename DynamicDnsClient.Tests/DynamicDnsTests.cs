@@ -129,6 +129,42 @@ public class DynamicDnsTests : IDisposable
         Assert.Contains(_logger.Logs!, msg => msg.Contains("[ERR]"));
         Assert.Empty(requestedUrls);
     }
+    
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task LogsErrorAndDoesntSaveNewIpWhenDdnsApiReturnsError(bool isHardFailure)
+    {
+        // Arrange
+        const string ip = "62.59.90.127";
+        
+        SetUpPublicIpApis(ip);
+
+        if (isHardFailure)
+        {
+            _runConfig.Instances!.ForEach(i =>
+            {
+                _mockServer
+                    .Given(Request.Create().WithPath(new Uri(i.DnsApiUrlTemplate!).LocalPath).UsingGet())
+                    .RespondWith(Response.Create().WithStatusCode(503));
+            });
+        }
+        else
+        {
+            SetUpDdnsApis(skipSuccessMessage: true);
+        }
+        
+        // Act
+        await _dynamicDns!.UpdateIpAddressesAsync();
+        
+        // Assert
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage.AbsoluteUrl).ToArray();
+        var hasSavedIp = File.Exists(_runConfig.SavedStateFilePath);
+        
+        Assert.False(hasSavedIp);
+        Assert.Contains(_logger.Logs!, msg => msg.Contains("[ERR]"));
+        GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
+    }
 
     private IEnumerable<string> GetExpectedUrlCalls(string newIp)
     {
@@ -153,8 +189,9 @@ public class DynamicDnsTests : IDisposable
             .Given(Request.Create().WithPath(new Uri(ipProviderUrl).LocalPath).UsingGet())
             .RespondWith(Response.Create().WithStatusCode(200).WithBody(publicIp));
 
-    private void SetUpDdnsApis() =>
-        _runConfig.Instances!.ForEach(i => SetUpDdnsApi(i.DnsApiUrlTemplate!, i.DnsApiSuccessMessage!));
+    private void SetUpDdnsApis(bool skipSuccessMessage = false) =>
+        _runConfig.Instances!.ForEach(i => SetUpDdnsApi(
+            i.DnsApiUrlTemplate!, skipSuccessMessage ? string.Empty : i.DnsApiSuccessMessage!));
 
     private void SetUpDdnsApi(string ddnsUrl, string successMessage) =>
         _mockServer

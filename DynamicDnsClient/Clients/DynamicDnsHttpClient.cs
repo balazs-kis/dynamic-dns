@@ -20,6 +20,7 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
     public async Task<bool> UpdateIpForDnsAsync(string newIp)
     {
         var appConfig = await _configReader.ReadConfigurationAsync();
+        var allSuccessful = true;
         
         foreach (var instance in appConfig!.Instances!)
         {
@@ -45,7 +46,8 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
                             $"Could not update IP for '{host}.{instance.DomainName}' with IP {newIp}. " +
                             $"Response status code: {response.StatusCode}");
 
-                        return false;
+                        allSuccessful = false;
+                        continue;
                     }
 
                     if (!string.IsNullOrWhiteSpace(instance.DnsApiSuccessMessage))
@@ -58,7 +60,8 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
                                 "Response status code was OK " +
                                 $"but the response did not contain '{instance.DnsApiSuccessMessage}'");
 
-                            return false;
+                            allSuccessful = false;
+                            continue;
                         }
                     }
 
@@ -71,11 +74,11 @@ public class DynamicDnsHttpClient : IDynamicDnsHttpClient
                         $"Could not update IP for '{host}.{instance.DomainName}' with IP {newIp}. " +
                         $"{ex.GetType().Name}: {ex.Message}");
 
-                    return false;
+                    allSuccessful = false;
                 }
             }
         }
 
-        return true;
+        return allSuccessful;
     }
 }

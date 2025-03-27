@@ -32,7 +32,7 @@ public class DynamicDns
         var config = await _configReader.ReadConfigurationAsync();
         if (config is null)
         {
-            _logger.LogError($"Dynamic DNS client is exiting due to invalid configuration.{Environment.NewLine}");
+            _logger.LogError($"Dynamic DNS client is exiting due to invalid configuration.");
             return;
         }
         
@@ -44,26 +44,25 @@ public class DynamicDns
         if (newPublicIp is null)
         {
             _logger.LogTrace(
-                $"Dynamic DNS client is exiting due to being unable to obtain public IP.{Environment.NewLine}");
+                $"Dynamic DNS client is exiting due to being unable to obtain public IP.");
     
             return;
         }
 
         if (string.Equals(newPublicIp, lastUpdatedPublicIp))
         {
-            _logger.LogTrace($"Dynamic DNS client is exiting: IP update is not needed.{Environment.NewLine}");
+            _logger.LogTrace($"Dynamic DNS client is exiting: IP update is not needed.");
             return;
         }
 
         if (await _dynamicDnsHttpClient.UpdateIpForDnsAsync(newPublicIp))
         {
             await _persistentSateHandler.UpdateLastUpdatedPublicIpAsync(newPublicIp);
-            _logger.LogTrace($"Dynamic DNS client is exiting: run completed.{Environment.NewLine}");
+            _logger.LogTrace($"Dynamic DNS client is exiting: run completed.");
         }
         else
         {
-            _logger.LogTrace(
-                $"Dynamic DNS client is exiting due to being unable to update public IP.{Environment.NewLine}");
+            _logger.LogError($"Dynamic DNS client was unable to update public IP.");
         }
     }
 }
