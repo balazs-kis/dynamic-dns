@@ -15,7 +15,7 @@ A simple Dynamic DNS client for updating the public IP address of a server, writ
 ## Configuration
 The default `appsettings.json` configuration file beside the executable contains a template with examples. The instance config parameters can be repeated as necessary for multiple domins.
 
-| Global Config parameters | Description                                                                                |
+| Global config parameters | Description                                                                                |
 | ------------------------ | ------------------------------------------------------------------------------------------ |
 | `savedStateFilePath`     | the path where the last successfully updated IP address will be saved                      |
 | `ipProviderUrls`         | the list of APIs that provide the caller's public IP address in a simple text response     |
@@ -26,7 +26,7 @@ The default `appsettings.json` configuration file beside the executable contains
 | `Hosts`                    | the list of host records to update the IP for (generally `@` for root and `*` for wildcard records)    |
 | `DnsApiSecret`             | the API secret (if needed), issued by your dynamic DNS provider                                        |
 | `DnsApiUrlTemplate`        | the API endpoint URL template for your dynamic DNS provider used to update the IP address for records  |
-| `DnsApiSuccessMessage`     | a phrase that the content of the API response must include (optional: not checked in not set)          |
+| `DnsApiSuccessMessage`     | a phrase that the content of the API response must include (optional: not checked if not set)          |
 
 Placeholders in the `DnsApiUrlTemplate` config parameter:
 - `{Host}`: the provided hosts will be substituted here when calling the provider's API
