@@ -157,6 +157,103 @@ public class DynamicDnsTests : IDisposable
         Assert.Empty(requestedUrls);
     }
     
+    [Fact]
+    public async Task DoesNotUpdateWhenAllPublicIpProvidersReturnInvalidResponses()
+    {
+        // Arrange
+        var ipApiUrls = _runConfig.IpProviderUrls!;
+
+        SetUpPublicIpApi(ipApiUrls[0], "<html><body>Error 503</body></html>");
+        SetUpPublicIpApi(ipApiUrls[1], "not-an-ip");
+        SetUpPublicIpApi(ipApiUrls[2], "2001:0db8:85a3::8a2e:0370:7334");
+        SetUpDdnsApis();
+
+        // Act
+        await _dynamicDns.UpdateIpAddressesAsync();
+
+        // Assert
+        var hasSavedIp = File.Exists(_runConfig.SavedStateFilePath);
+
+        Assert.False(hasSavedIp);
+        Assert.Contains(_logger.Logs!, msg =>
+            msg.Contains("[ERR]") && msg.Contains("unable to obtain public IP"));
+        ipApiUrls.ForEach(url =>
+            Assert.Contains(_logger.Logs!, msg => msg.Contains("[WRN]") && msg.Contains(url)));
+    }
+
+    [Fact]
+    public async Task UpdatesIpWhenPublicIpProviderThrowsExceptionButNextProviderSucceeds()
+    {
+        // Arrange
+        const string ip = "62.59.90.127";
+
+        var ipApiUrls = _runConfig.IpProviderUrls!;
+
+        _mockServer
+            .Given(Request.Create().WithPath(new Uri(ipApiUrls[0]).LocalPath).UsingGet())
+            .RespondWith(Response.Create().WithFault(FaultType.MALFORMED_RESPONSE_CHUNK));
+        SetUpPublicIpApi(ipApiUrls[1], ip);
+        SetUpDdnsApis();
+
+        // Act
+        await _dynamicDns.UpdateIpAddressesAsync();
+
+        // Assert
+        var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
+
+        Assert.Equal(ip, savedIp);
+        Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
+        Assert.Contains(_logger.Logs!, msg => msg.Contains("[WRN]") && msg.Contains(ipApiUrls[0]));
+    }
+
+    [Fact]
+    public async Task LogsWarningWhenDdnsApiThrowsException()
+    {
+        // Arrange
+        const string ip = "62.59.90.127";
+
+        SetUpPublicIpApis(ip);
+
+        _runConfig.Instances!.ForEach(i =>
+        {
+            _mockServer
+                .Given(Request.Create().WithPath(new Uri(i.DnsApiUrlTemplate!).LocalPath).UsingGet())
+                .RespondWith(Response.Create().WithFault(FaultType.MALFORMED_RESPONSE_CHUNK));
+        });
+
+        // Act
+        await _dynamicDns.UpdateIpAddressesAsync();
+
+        // Assert
+        var hasSavedIp = File.Exists(_runConfig.SavedStateFilePath);
+
+        Assert.False(hasSavedIp);
+        Assert.Contains(_logger.Logs!, msg =>
+            msg.Contains("[ERR]") && msg.Contains("unable to update public IP"));
+    }
+
+    [Fact]
+    public async Task LogsWarningWhenStateFileCannotBeWritten()
+    {
+        // Arrange
+        const string ip = "62.59.90.127";
+
+        SetUpPublicIpApis(ip);
+        SetUpDdnsApis();
+
+        // Create a directory with the same name as the state file path to cause a write failure
+        Directory.CreateDirectory(_runConfig.SavedStateFilePath);
+
+        // Act
+        await _dynamicDns.UpdateIpAddressesAsync();
+
+        // Assert
+        Assert.Contains(_logger.Logs!, msg => msg.Contains("[WRN]") && msg.Contains("Could not write"));
+
+        // Cleanup
+        Directory.Delete(_runConfig.SavedStateFilePath);
+    }
+
     [Theory]
     [InlineData(true)]
     [InlineData(false)]

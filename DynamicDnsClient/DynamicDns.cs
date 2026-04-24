@@ -43,9 +43,9 @@ public class DynamicDns
         var newPublicIp = await _publicIpHttpClient.GetPublicIpAsync();
         if (newPublicIp is null)
         {
-            _logger.LogTrace(
+            _logger.LogError(
                 "Dynamic DNS client is exiting due to being unable to obtain public IP.");
-    
+
             return;
         }
 
