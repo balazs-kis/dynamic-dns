@@ -6,21 +6,23 @@
         <OutputType>Exe</OutputType>
         <RootNamespace>DynamicDnsClient.Tests</RootNamespace>
         <TargetFramework>net10.0</TargetFramework>
-        <!-- Enable the Microsoft Testing Platform 'dotnet test' experience -->
         <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
-        <!-- Enable the Microsoft Testing Platform native command line experience -->
         <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest"/>
+        <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
     <ItemGroup>
-        <Using Include="Xunit"/>
+        <Using Include="Xunit" />
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="coverlet.collector" Version="10.0.0">
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+          <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.4.0" />
         <PackageReference Include="WireMock.Net" Version="2.3.0" />
         <PackageReference Include="xunit.v3" Version="3.2.2" />
