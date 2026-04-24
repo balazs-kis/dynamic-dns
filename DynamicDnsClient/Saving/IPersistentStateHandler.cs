@@ -1,6 +1,6 @@
 ﻿namespace DynamicDnsClient.Saving;
 
-public interface IPersistentSateHandler
+public interface IPersistentStateHandler
 {
     Task<string> GetLastUpdatedPublicIpAsync();
     Task UpdateLastUpdatedPublicIpAsync(string newIp);

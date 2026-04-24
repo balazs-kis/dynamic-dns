@@ -35,7 +35,7 @@ public class DynamicDnsTests : IDisposable
         var httpClient = new HttpClient();
         var publicIpClient = new PublicIpHttpClient(httpClient, _configReader, _logger);
         var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, _configReader, _logger);
-        var persistentStateHandler = new PersistentSateHandler(_configReader, _logger);
+        var persistentStateHandler = new PersistentStateHandler(_configReader, _logger);
         
         _dynamicDns = new DynamicDns(_configReader, publicIpClient, dynamicDnsClient, persistentStateHandler, _logger);
     }
@@ -50,10 +50,10 @@ public class DynamicDnsTests : IDisposable
         SetUpDdnsApis();
         
         // Act
-        await _dynamicDns!.UpdateIpAddressesAsync();
+        await _dynamicDns.UpdateIpAddressesAsync();
         
         // Assert
-        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage.AbsoluteUrl).ToArray();
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage?.AbsoluteUrl).ToArray();
         var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
         
         Assert.Equal(ip, savedIp);
@@ -73,14 +73,41 @@ public class DynamicDnsTests : IDisposable
         SetUpDdnsApis();
         
         // Act
-        await _dynamicDns!.UpdateIpAddressesAsync();
+        await _dynamicDns.UpdateIpAddressesAsync();
         
         // Assert
-        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage.AbsoluteUrl).ToArray();
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage?.AbsoluteUrl).ToArray();
         var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
         
         Assert.Equal(ip, savedIp);
         Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
+        GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
+    }
+
+    [Fact]
+    public async Task UpdatesAllInstancesWithNewIpWhenFirstProvidersReturnInvalidResponses()
+    {
+        // Arrange
+        const string ip = "90.62.59.132";
+
+        var ipApiUrls = _runConfig.IpProviderUrls!;
+
+        SetUpPublicIpApi(ipApiUrls[0], "<html><body>Error 503</body></html>");
+        SetUpPublicIpApi(ipApiUrls[1], "not-an-ip");
+        SetUpPublicIpApi(ipApiUrls[2], ip);
+        SetUpDdnsApis();
+
+        // Act
+        await _dynamicDns.UpdateIpAddressesAsync();
+
+        // Assert
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage?.AbsoluteUrl).ToArray();
+        var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
+
+        Assert.Equal(ip, savedIp);
+        Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
+        Assert.Contains(_logger.Logs!, msg => msg.Contains("[WRN]") && msg.Contains(ipApiUrls[0]));
+        Assert.Contains(_logger.Logs!, msg => msg.Contains("[WRN]") && msg.Contains(ipApiUrls[1]));
         GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
     }
 
@@ -96,10 +123,10 @@ public class DynamicDnsTests : IDisposable
         await File.WriteAllTextAsync(_runConfig.SavedStateFilePath, ip, _ct);
         
         // Act
-        await _dynamicDns!.UpdateIpAddressesAsync();
+        await _dynamicDns.UpdateIpAddressesAsync();
         
         // Assert
-        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage.AbsoluteUrl).ToArray();
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage?.AbsoluteUrl).ToArray();
         var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
         
         Assert.Equal(ip, savedIp);
@@ -119,10 +146,10 @@ public class DynamicDnsTests : IDisposable
         File.Delete(_configReader.AppConfigPath);
         
         // Act
-        await _dynamicDns!.UpdateIpAddressesAsync();
+        await _dynamicDns.UpdateIpAddressesAsync();
         
         // Assert
-        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage.AbsoluteUrl).ToArray();
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage?.AbsoluteUrl).ToArray();
         var hasSavedIp = File.Exists(_runConfig.SavedStateFilePath);
         
         Assert.False(hasSavedIp);
@@ -155,10 +182,10 @@ public class DynamicDnsTests : IDisposable
         }
         
         // Act
-        await _dynamicDns!.UpdateIpAddressesAsync();
+        await _dynamicDns.UpdateIpAddressesAsync();
         
         // Assert
-        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage.AbsoluteUrl).ToArray();
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage?.AbsoluteUrl).ToArray();
         var hasSavedIp = File.Exists(_runConfig.SavedStateFilePath);
         
         Assert.False(hasSavedIp);

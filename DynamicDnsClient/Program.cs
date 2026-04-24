@@ -13,7 +13,7 @@ try
     var httpClient = new HttpClient();
     var publicIpClient = new PublicIpHttpClient(httpClient, configReader, logger);
     var dynamicDnsClient = new DynamicDnsHttpClient(httpClient, configReader, logger);
-    var persistentStateHandler = new PersistentSateHandler(configReader, logger);
+    var persistentStateHandler = new PersistentStateHandler(configReader, logger);
 
     var dynamicDns = new DynamicDns(configReader, publicIpClient, dynamicDnsClient, persistentStateHandler, logger);
     await dynamicDns.UpdateIpAddressesAsync();

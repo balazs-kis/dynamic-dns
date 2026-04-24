@@ -1,4 +1,6 @@
-﻿using DynamicDnsClient.Configuration;
+﻿using System.Net;
+using System.Net.Sockets;
+using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Logging;
 
 namespace DynamicDnsClient.Clients;
@@ -18,11 +20,11 @@ public class PublicIpHttpClient : IPublicIpHttpClient
     
     public async Task<string?> GetPublicIpAsync()
     {
-        try
+        var appConfig = await _configReader.ReadConfigurationAsync();
+
+        foreach (var ipProviderUrl in appConfig!.IpProviderUrls!)
         {
-            var appConfig = await _configReader.ReadConfigurationAsync();
-            
-            foreach (var ipProviderUrl in appConfig!.IpProviderUrls!)
+            try
             {
                 using var request = new HttpRequestMessage();
 
@@ -35,23 +37,38 @@ public class PublicIpHttpClient : IPublicIpHttpClient
                     _logger.LogWarning(
                         $"Could not obtain public IP address from '{ipProviderUrl}'. " +
                         $"Status code: {response.StatusCode}");
-                    
+
                     continue;
                 }
-                    
+
                 var publicIp = (await response.Content.ReadAsStringAsync()).TrimEnd();
+
+                if (!IPAddress.TryParse(publicIp, out var address) ||
+                    address.AddressFamily != AddressFamily.InterNetwork)
+                {
+                    var truncatedResponse = publicIp.Length > 50
+                        ? publicIp[..50] + "..."
+                        : publicIp;
+
+                    _logger.LogWarning(
+                        $"Could not obtain public IP address from '{ipProviderUrl}'. " +
+                        $"Response is not a valid IPv4 address: '{truncatedResponse}'");
+
+                    continue;
+                }
 
                 _logger.LogTrace($"Public IP obtained from '{ipProviderUrl}': {publicIp}");
                 return publicIp;
             }
-            
-            _logger.LogWarning("Could not obtain public IP address from any configured providers.");
-            return null;
+            catch (Exception ex)
+            {
+                _logger.LogWarning(
+                    $"Could not obtain public IP address from '{ipProviderUrl}'. " +
+                    $"{ex.GetType().Name}: {ex.Message}");
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.LogWarning($"Could not obtain public IP address. {ex.GetType().Name}: {ex.Message}");
-            return null;
-        }
+
+        _logger.LogWarning("Could not obtain public IP address from any configured providers.");
+        return null;
     }
 }
