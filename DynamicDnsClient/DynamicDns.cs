@@ -10,20 +10,20 @@ public class DynamicDns
     private readonly IConfigReader _configReader;
     private readonly IPublicIpHttpClient _publicIpHttpClient;
     private readonly IDynamicDnsHttpClient _dynamicDnsHttpClient;
-    private readonly IPersistentSateHandler _persistentSateHandler;
+    private readonly IPersistentStateHandler _persistentStateHandler;
     private readonly ILogger _logger;
 
     public DynamicDns(
         IConfigReader configReader,
         IPublicIpHttpClient publicIpHttpClient,
         IDynamicDnsHttpClient dynamicDnsHttpClient,
-        IPersistentSateHandler persistentSateHandler,
+        IPersistentStateHandler persistentStateHandler,
         ILogger logger)
     {
         _configReader = configReader;
         _publicIpHttpClient = publicIpHttpClient;
         _dynamicDnsHttpClient = dynamicDnsHttpClient;
-        _persistentSateHandler = persistentSateHandler;
+        _persistentStateHandler = persistentStateHandler;
         _logger = logger;
     }
     
@@ -32,37 +32,37 @@ public class DynamicDns
         var config = await _configReader.ReadConfigurationAsync();
         if (config is null)
         {
-            _logger.LogError($"Dynamic DNS client is exiting due to invalid configuration.");
+            _logger.LogError("Dynamic DNS client is exiting due to invalid configuration.");
             return;
         }
         
         _logger.LogTrace("Dynamic DNS client started.");
 
-        var lastUpdatedPublicIp = await _persistentSateHandler.GetLastUpdatedPublicIpAsync();
+        var lastUpdatedPublicIp = await _persistentStateHandler.GetLastUpdatedPublicIpAsync();
 
         var newPublicIp = await _publicIpHttpClient.GetPublicIpAsync();
         if (newPublicIp is null)
         {
             _logger.LogTrace(
-                $"Dynamic DNS client is exiting due to being unable to obtain public IP.");
+                "Dynamic DNS client is exiting due to being unable to obtain public IP.");
     
             return;
         }
 
         if (string.Equals(newPublicIp, lastUpdatedPublicIp))
         {
-            _logger.LogTrace($"Dynamic DNS client is exiting: IP update is not needed.");
+            _logger.LogTrace("Dynamic DNS client is exiting: IP update is not needed.");
             return;
         }
 
         if (await _dynamicDnsHttpClient.UpdateIpForDnsAsync(newPublicIp))
         {
-            await _persistentSateHandler.UpdateLastUpdatedPublicIpAsync(newPublicIp);
-            _logger.LogTrace($"Dynamic DNS client is exiting: run completed.");
+            await _persistentStateHandler.UpdateLastUpdatedPublicIpAsync(newPublicIp);
+            _logger.LogTrace("Dynamic DNS client is exiting: run completed.");
         }
         else
         {
-            _logger.LogError($"Dynamic DNS client was unable to update public IP.");
+            _logger.LogError("Dynamic DNS client was unable to update public IP.");
         }
     }
 }

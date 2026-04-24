@@ -3,14 +3,14 @@ using DynamicDnsClient.Logging;
 
 namespace DynamicDnsClient.Saving;
 
-public class PersistentSateHandler : IPersistentSateHandler
+public class PersistentStateHandler : IPersistentStateHandler
 {
     private const string DefaultIp = "127.0.0.1";
     
     private readonly IConfigReader _configReader;
     private readonly ILogger _logger;
 
-    public PersistentSateHandler(IConfigReader configReader, ILogger logger)
+    public PersistentStateHandler(IConfigReader configReader, ILogger logger)
     {
         _configReader = configReader;
         _logger = logger;
