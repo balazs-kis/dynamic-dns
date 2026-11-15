@@ -1,0 +1,32 @@
+# Dependabot version updates: weekly PRs for newer dependency versions.
+# Security updates (immediate PRs for vulnerable dependencies) are enabled separately in the repository settings.
+version: 2
+updates:
+  # NuGet packages of all projects in the solution
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # Minor and patch updates in one PR; major updates get their own PR, as they may need code changes
+      nuget-minor-and-patch:
+        update-types: [minor, patch]
+
+  # Actions used in .github/workflows
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ['*']
+
+  # .NET SDK version in global.json
+  - package-ecosystem: dotnet-sdk
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      # A new major .NET version also needs the target framework updated, so it's done by hand
+      - dependency-name: '*'
+        update-types: [version-update:semver-major]

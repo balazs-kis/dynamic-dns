@@ -2,7 +2,8 @@ name: CI
 
 on:
   push:
-    branches: ['**']
+    # Dependabot branches are covered by the pull_request trigger below
+    branches: ['**', '!dependabot/**']
   pull_request:
     branches: [main]
 
