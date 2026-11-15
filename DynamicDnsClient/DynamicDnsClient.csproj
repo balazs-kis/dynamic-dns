@@ -8,6 +8,8 @@
         <PublishAot>true</PublishAot>
         <StripSymbols>true</StripSymbols>
         <LangVersion>default</LangVersion>
+        <!-- Placeholder for local builds. Releases override it from the git tag (-p:Version=...). -->
+        <Version>0.0.0-dev</Version>
     </PropertyGroup>
 
     <ItemGroup>

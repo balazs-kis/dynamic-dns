@@ -1,0 +1,127 @@
+name: release
+
+# Push a tag like v2.2.0 (or v2.2.0-rc.1 for a pre-release) to build and publish a GitHub release.
+# The version stamped into the binaries comes from the tag; the <Version> in the csproj is only for local builds.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - name: Get version from tag
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not a valid version tag (expected e.g. v2.2.0 or v2.2.0-rc.1)"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 11.0.x
+
+      - name: Build
+        run: dotnet build
+
+      - name: Test
+        run: dotnet test --no-build
+
+  build:
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-24.04
+            asset: dynamic_dns_client_linux_x64
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+            asset: dynamic_dns_client_linux_arm64
+          - rid: win-x64
+            os: windows-latest
+            asset: dynamic_dns_client_win_x64
+
+    # Native AOT cannot cross-compile between operating systems, so each target builds on its own runner.
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 11.0.x
+
+      - name: Install Native AOT prerequisites
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y clang zlib1g-dev
+
+      - name: Publish
+        shell: bash
+        run: >
+          dotnet publish DynamicDnsClient/DynamicDnsClient.csproj
+          -c Release -r ${{ matrix.rid }} -o publish
+          -p:Version=${{ needs.test.outputs.version }}
+
+      # Packaged here rather than in the release job: artifact uploads drop the executable bit.
+      - name: Package (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          chmod +x publish/DynamicDnsClient
+          tar -czf ${{ matrix.asset }}.tar.gz -C publish DynamicDnsClient appsettings.json
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >
+          Compress-Archive
+          -Path publish/DynamicDnsClient.exe, publish/appsettings.json
+          -DestinationPath ${{ matrix.asset }}.zip
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}.*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Create checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then prerelease="--prerelease"; fi
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag \
+            $prerelease

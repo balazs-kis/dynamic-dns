@@ -7,7 +7,7 @@
 A simple Dynamic DNS client for updating the public IP address of a server, written in C#.
 
 ## Usage
-1. :floppy_disk: Download the latest release for your platform (Windows or Linux)
+1. :floppy_disk: Download the [latest release](https://github.com/balazs-kis/dynamic-dns/releases/latest) for your platform (Windows x64, Linux x64 or Linux ARM64)
 2. :pencil2: Add your dynamic DNS provider's info to the configuration file
 3. :rocket: Run the executable (add `-s` or `--silent` for skipping trace-level messages)
 4. :arrows_counterclockwise: _(optional)_ Set up a recurring job to run the executable periodically for you
@@ -35,13 +35,28 @@ Placeholders in the `DnsApiUrlTemplate` config parameter:
 - `{NewIp}`: the public IP obtained from one of the provided `IpProviderUrls` will be substituted here when calling the provider's API
 
 ## Setting up a cron job for dynamic DNS IP update
-Let's assume that the Linux x64 version was downloaded and unzipped to your `~/dyn-dns` directory and the necessary info was written to the `appsettings.json` file in the same directory.
-After all that, give execution rights to the application:
+Download the Linux package for your architecture (`linux_x64` or `linux_arm64`) and extract it to your `~/dyn-dns` directory:
 ```console
-user@server:~/dyn-dns$ sudo chmod +x DynamicDnsClient
+user@server:~$ mkdir -p ~/dyn-dns && tar -xzf dynamic_dns_client_linux_x64.tar.gz -C ~/dyn-dns
 ```
-All you have to do to run the app periodically is to add the following line to your crontab:
+Each release also contains a `SHA256SUMS.txt` file, so you can verify the download first with `sha256sum --check --ignore-missing SHA256SUMS.txt`.
+
+After writing the necessary info to the `appsettings.json` file in the same directory, all you have to do to run the app periodically is to add the following line to your crontab:
 ```cron
 */5 * * * * cd ~/dyn-dns && ./DynamicDnsClient -s >> dyn-dns.log
 ```
 This will run the application every 5 minutes, and write the output to a `dyn-dns.log` file.
+
+## Updating to a new version
+If you already have a previous version set up, you only need to replace the executable. Your configured `appsettings.json` and the saved state file (`savedStateFilePath`) stay as they are.
+
+> :warning: Don't extract the whole package over your existing installation: the `appsettings.json` in the package is the default template, and it would overwrite your configuration.
+
+**Linux:** download the new package for your architecture, and extract only the executable into your installation directory (`~/dyn-dns` in the example above):
+```console
+user@server:~$ tar -xzf dynamic_dns_client_linux_x64.tar.gz -C ~/dyn-dns DynamicDnsClient
+```
+
+**Windows:** download the new `dynamic_dns_client_win_x64.zip`, extract it to a temporary folder, and copy only `DynamicDnsClient.exe` over the old one in your installation folder.
+
+If you run the application periodically (e.g. with the cron job above), there is nothing else to do: the next run will use the new version.
