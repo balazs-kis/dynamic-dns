@@ -1,6 +1,6 @@
 # Dynamic DNS client
 
-[![Build Status](https://github.com/balazs-kis/dynamic-dns/workflows/build-and-test/badge.svg "Build Status")](https://github.com/balazs-kis/dynamic-dns/actions?query=workflow%3A%22build-and-test%22)
+[![Build Status](https://github.com/balazs-kis/dynamic-dns/actions/workflows/ci.yml/badge.svg?branch=main "Build Status")](https://github.com/balazs-kis/dynamic-dns/actions/workflows/ci.yml?query=branch%3Amain)
 [![Coverage Status](https://codecov.io/gh/balazs-kis/dynamic-dns/branch/main/graph/badge.svg)](https://codecov.io/gh/balazs-kis/dynamic-dns)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blueviolet)](https://opensource.org/licenses/MIT)
 

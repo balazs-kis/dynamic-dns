@@ -1,8 +1,14 @@
-name: build-and-test-branch
+name: build-and-test
 
 on:
   push:
-    branches-ignore: [main]
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
