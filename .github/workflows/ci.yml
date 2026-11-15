@@ -18,10 +18,10 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 11.0.x
 
@@ -41,7 +41,7 @@ jobs:
       # Skipped for Dependabot: its runs can't access Actions secrets, and coverage adds nothing to version-bump PRs
       - name: Upload coverage to Codecov
         if: github.actor != 'dependabot[bot]'
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./DynamicDnsClient.Tests/TestResults/coverage.cobertura.xml
