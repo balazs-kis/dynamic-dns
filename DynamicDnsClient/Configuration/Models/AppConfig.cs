@@ -1,4 +1,4 @@
-﻿namespace DynamicDnsClient.Configuration.Models;
+namespace DynamicDnsClient.Configuration.Models;
 
 public sealed record AppConfig(string SavedStateFilePath, string[]? IpProviderUrls, InstanceConfig[]? Instances)
 {

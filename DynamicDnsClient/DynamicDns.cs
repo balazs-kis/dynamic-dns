@@ -1,4 +1,4 @@
-﻿using DynamicDnsClient.Clients;
+using DynamicDnsClient.Clients;
 using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Logging;
 using DynamicDnsClient.Saving;

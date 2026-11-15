@@ -1,4 +1,4 @@
-﻿namespace DynamicDnsClient.Logging;
+namespace DynamicDnsClient.Logging;
 
 public interface ILogger
 {

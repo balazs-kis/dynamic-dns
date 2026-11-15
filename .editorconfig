@@ -1,0 +1,6 @@
+root = true
+
+# All files: UTF-8 without BOM, LF line endings
+[*]
+charset = utf-8
+end_of_line = lf

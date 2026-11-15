@@ -1,4 +1,4 @@
-﻿namespace DynamicDnsClient.Clients;
+namespace DynamicDnsClient.Clients;
 
 public interface IDynamicDnsHttpClient
 {

@@ -1,4 +1,4 @@
-﻿namespace DynamicDnsClient.Saving;
+namespace DynamicDnsClient.Saving;
 
 public interface IPersistentStateHandler
 {

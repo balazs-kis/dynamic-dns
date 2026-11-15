@@ -1,4 +1,4 @@
-﻿using DynamicDnsClient.Configuration.Models;
+using DynamicDnsClient.Configuration.Models;
 
 namespace DynamicDnsClient.Configuration;
 
