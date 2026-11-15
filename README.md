@@ -7,7 +7,7 @@
 A simple Dynamic DNS client for updating the public IP address of a server, written in C#.
 
 ## Usage
-1. :floppy_disk: Download the [latest release](https://github.com/balazs-kis/dynamic-dns/releases/latest) for your platform (Windows x64, Linux x64 or Linux ARM64)
+1. :floppy_disk: Download the [latest release](https://github.com/balazs-kis/dynamic-dns/releases/latest) for your platform (Windows x64, Linux x64, Linux ARM64 or macOS on Apple Silicon)
 2. :pencil2: Add your dynamic DNS provider's info to the configuration file
 3. :rocket: Run the executable (add `-s` or `--silent` for skipping trace-level messages, or `-v` or `--version` to print the version and exit)
 4. :arrows_counterclockwise: _(optional)_ Set up a recurring job to run the executable periodically for you
@@ -35,11 +35,17 @@ Placeholders in the `DnsApiUrlTemplate` config parameter:
 - `{NewIp}`: the public IP obtained from one of the provided `IpProviderUrls` will be substituted here when calling the provider's API
 
 ## Setting up a cron job for dynamic DNS IP update
-Download the Linux package for your architecture (`linux_x64` or `linux_arm64`) and extract it to your `~/dyn-dns` directory:
+The steps below work the same on Linux and macOS. Download the package for your platform (`linux_x64`, `linux_arm64` or `osx_arm64`) and extract it to your `~/dyn-dns` directory:
 ```console
 user@server:~$ mkdir -p ~/dyn-dns && tar -xzf dynamic_dns_client_linux_x64.tar.gz -C ~/dyn-dns
 ```
-Each release also contains a `SHA256SUMS.txt` file, so you can verify the download first with `sha256sum --check --ignore-missing SHA256SUMS.txt`.
+Each release also contains a `SHA256SUMS.txt` file, so you can verify the download first with `sha256sum --check --ignore-missing SHA256SUMS.txt` (on macOS: compare the output of `shasum -a 256 dynamic_dns_client_osx_arm64.tar.gz` with the matching line in the file).
+
+> :apple: **macOS:** the executable is not signed with an Apple Developer certificate. If you downloaded the package with a browser, macOS will refuse to run it ("Apple could not verify..."). Remove the download quarantine flag once after extracting:
+> ```console
+> user@mac:~$ xattr -d com.apple.quarantine ~/dyn-dns/DynamicDnsClient
+> ```
+> Packages downloaded with `curl` or `wget` are not quarantined, so this step is not needed for them.
 
 After writing the necessary info to the `appsettings.json` file in the same directory, all you have to do to run the app periodically is to add the following line to your crontab:
 ```cron
@@ -52,10 +58,11 @@ If you already have a previous version set up, you only need to replace the exec
 
 > :warning: Don't extract the whole package over your existing installation: the `appsettings.json` in the package is the default template, and it would overwrite your configuration.
 
-**Linux:** download the new package for your architecture, and extract only the executable into your installation directory (`~/dyn-dns` in the example above):
+**Linux and macOS:** download the new package for your platform, and extract only the executable into your installation directory (`~/dyn-dns` in the example above):
 ```console
 user@server:~$ tar -xzf dynamic_dns_client_linux_x64.tar.gz -C ~/dyn-dns DynamicDnsClient
 ```
+On macOS, if you downloaded the package with a browser, remove the quarantine flag from the new executable again, as described above.
 
 **Windows:** download the new `dynamic_dns_client_win_x64.zip`, extract it to a temporary folder, and copy only `DynamicDnsClient.exe` over the old one in your installation folder.
 

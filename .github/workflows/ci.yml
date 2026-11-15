@@ -1,4 +1,4 @@
-name: build-and-test
+name: CI
 
 on:
   push:
@@ -12,12 +12,14 @@ concurrency:
 
 jobs:
   build-and-test:
+    name: Build and test
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - name: Check out code
+        uses: actions/checkout@v6
 
-      - name: Setup dotnet
+      - name: Set up .NET
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 11.0.x
@@ -28,8 +30,12 @@ jobs:
       - name: Build
         run: dotnet build --no-restore
 
-      - name: Test
-        run: dotnet test --no-build --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml --coverage-settings DynamicDnsClient.Tests/coverage.config --results-directory ./DynamicDnsClient.Tests/TestResults
+      - name: Test with coverage
+        run: >
+          dotnet test --no-build
+          --coverage --coverage-output-format cobertura --coverage-output coverage.cobertura.xml
+          --coverage-settings DynamicDnsClient.Tests/coverage.config
+          --results-directory ./DynamicDnsClient.Tests/TestResults
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v6
