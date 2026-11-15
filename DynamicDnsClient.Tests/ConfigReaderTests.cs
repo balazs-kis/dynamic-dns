@@ -1,6 +1,5 @@
 using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Logging;
-using DynamicDnsClient.Tests.Tools;
 
 namespace DynamicDnsClient.Tests;
 
@@ -12,7 +11,7 @@ public class ConfigReaderTests : IDisposable
 
     public ConfigReaderTests()
     {
-        var runId = DataGenerator.GenerateWord();
+        var runId = Guid.NewGuid().ToString("N")[..12];
 
         _ct = TestContext.Current.CancellationToken;
         _logger = new ConsoleLogger(true);

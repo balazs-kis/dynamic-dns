@@ -9,7 +9,7 @@ A simple Dynamic DNS client for updating the public IP address of a server, writ
 ## Usage
 1. :floppy_disk: Download the [latest release](https://github.com/balazs-kis/dynamic-dns/releases/latest) for your platform (Windows x64, Linux x64 or Linux ARM64)
 2. :pencil2: Add your dynamic DNS provider's info to the configuration file
-3. :rocket: Run the executable (add `-s` or `--silent` for skipping trace-level messages)
+3. :rocket: Run the executable (add `-s` or `--silent` for skipping trace-level messages, or `-v` or `--version` to print the version and exit)
 4. :arrows_counterclockwise: _(optional)_ Set up a recurring job to run the executable periodically for you
 
 ## Configuration

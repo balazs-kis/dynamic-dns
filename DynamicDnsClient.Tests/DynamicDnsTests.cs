@@ -25,7 +25,7 @@ public class DynamicDnsTests : IDisposable
 
     public DynamicDnsTests()
     {
-        _runId = DataGenerator.GenerateWord();
+        _runId = Guid.NewGuid().ToString("N")[..12];
 
         _ct = TestContext.Current.CancellationToken;
         _logger = new ConsoleLogger(true);

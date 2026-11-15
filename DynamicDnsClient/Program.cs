@@ -4,6 +4,12 @@ using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Logging;
 using DynamicDnsClient.Saving;
 
+if (args.Contains("--version") || args.Contains("-v"))
+{
+    Console.WriteLine(AppVersion.Current);
+    return;
+}
+
 var traceDisabled = args.Contains("--silent") || args.Contains("-s");
 var logger = new ConsoleLogger(!traceDisabled);
 
