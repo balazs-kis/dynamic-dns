@@ -35,7 +35,7 @@ Placeholders in the `DnsApiUrlTemplate` config parameter:
 - `{NewIp}`: the public IP obtained from one of the provided `IpProviderUrls` will be substituted here when calling the provider's API
 
 ## Setting up a cron job for dynamic DNS IP update
-Let's assume that the Linux x64 version was downloaded and unzipped to your `~/dyn-dns` directory and the necessary info was written to the `.config` file in the same directory.
+Let's assume that the Linux x64 version was downloaded and unzipped to your `~/dyn-dns` directory and the necessary info was written to the `appsettings.json` file in the same directory.
 After all that, give execution rights to the application:
 ```console
 user@server:~/dyn-dns$ sudo chmod +x DynamicDnsClient

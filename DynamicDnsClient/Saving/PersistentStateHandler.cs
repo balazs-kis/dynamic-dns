@@ -1,5 +1,7 @@
-﻿using DynamicDnsClient.Configuration;
+﻿using System.Text;
+using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Logging;
+using DynamicDnsClient.Validation;
 
 namespace DynamicDnsClient.Saving;
 
@@ -25,10 +27,21 @@ public class PersistentStateHandler : IPersistentStateHandler
             
             if (File.Exists(savedStateFilePath))
             {
-                var lastUpdatedPublicIp = await File.ReadAllTextAsync(savedStateFilePath);
-                _logger.LogTrace($"Read last updated public IP from file: {lastUpdatedPublicIp}");
-                
-                return lastUpdatedPublicIp;
+                // The file must contain exactly what UpdateLastUpdatedPublicIpAsync writes: a canonical IPv4
+                // address and nothing else. The raw bytes are decoded so that a BOM is not silently stripped.
+                var lastUpdatedPublicIp = new FileInfo(savedStateFilePath).Length <= Ipv4Address.MaxLength
+                    ? Encoding.UTF8.GetString(await File.ReadAllBytesAsync(savedStateFilePath))
+                    : null;
+
+                if (Ipv4Address.IsCanonical(lastUpdatedPublicIp))
+                {
+                    _logger.LogTrace($"Read last updated public IP from file: {lastUpdatedPublicIp}");
+                    return lastUpdatedPublicIp;
+                }
+
+                _logger.LogWarning(
+                    "The saved state file does not contain a valid IP address, ignoring it. " +
+                    "It will be overwritten after the next successful update.");
             }
         }
         catch (Exception ex)

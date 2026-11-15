@@ -37,8 +37,11 @@ public static class ConfigSetup
                     $"{id}-com-success-message")
             ]);
         
-        File.WriteAllText($"appsettings.{id}.json", JsonSerializer.Serialize(config, SerializerOptions));
+        WriteConfig(id, config);
 
         return config;
     }
+
+    public static void WriteConfig(string id, AppConfig config) =>
+        File.WriteAllText($"appsettings.{id}.json", JsonSerializer.Serialize(config, SerializerOptions));
 }

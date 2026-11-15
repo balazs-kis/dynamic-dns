@@ -1,7 +1,6 @@
-﻿using System.Net;
-using System.Net.Sockets;
-using DynamicDnsClient.Configuration;
+﻿using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Logging;
+using DynamicDnsClient.Validation;
 
 namespace DynamicDnsClient.Clients;
 
@@ -43,8 +42,7 @@ public class PublicIpHttpClient : IPublicIpHttpClient
 
                 var publicIp = (await response.Content.ReadAsStringAsync()).TrimEnd();
 
-                if (!IPAddress.TryParse(publicIp, out var address) ||
-                    address.AddressFamily != AddressFamily.InterNetwork)
+                if (!Ipv4Address.IsCanonical(publicIp))
                 {
                     var truncatedResponse = publicIp.Length > 50
                         ? publicIp[..50] + "..."

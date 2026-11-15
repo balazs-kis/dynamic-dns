@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using DynamicDnsClient.Clients;
 using DynamicDnsClient.Configuration;
 using DynamicDnsClient.Configuration.Models;
@@ -13,6 +15,7 @@ namespace DynamicDnsClient.Tests;
 
 public class DynamicDnsTests : IDisposable
 {
+    private readonly string _runId;
     private readonly CancellationToken _ct;
     private readonly WireMockServer _mockServer;
     private readonly ConsoleLogger _logger;
@@ -22,13 +25,13 @@ public class DynamicDnsTests : IDisposable
 
     public DynamicDnsTests()
     {
-        var runId = DataGenerator.GenerateWord();
-        
+        _runId = DataGenerator.GenerateWord();
+
         _ct = TestContext.Current.CancellationToken;
         _logger = new ConsoleLogger(true);
         _mockServer = WireMockServer.Start();
-        _runConfig = ConfigSetup.GenerateConfig(runId, _mockServer.Urls[0]);
-        _configReader = new ConfigReader(_logger, runId);
+        _runConfig = ConfigSetup.GenerateConfig(_runId, _mockServer.Urls[0]);
+        _configReader = new ConfigReader(_logger, _runId);
 
         _logger.Logs = new List<string>(25);
         
@@ -134,6 +137,102 @@ public class DynamicDnsTests : IDisposable
         GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.DoesNotContain(expectedUrl, requestedUrls));
     }
 
+    [Theory]
+    [InlineData("62.59.90.127\n")]
+    [InlineData("62.59.90.127\r\n")]
+    [InlineData(" 62.59.90.127")]
+    [InlineData("62.59.90.127 ")]
+    [InlineData("﻿62.59.90.127")]
+    [InlineData("062.59.90.127")]
+    [InlineData("62.59.90")]
+    [InlineData("62.59.90.127x")]
+    [InlineData("62.59.90.127\n62.59.90.127")]
+    [InlineData("2001:db8::1")]
+    [InlineData("")]
+    public async Task TreatsSavedStateAsMissingWhenItIsNotExactlyAnIpAddress(string savedStateContent)
+    {
+        // Arrange
+        const string ip = "62.59.90.127";
+
+        SetUpPublicIpApis(ip);
+        SetUpDdnsApis();
+
+        await File.WriteAllTextAsync(_runConfig.SavedStateFilePath, savedStateContent, _ct);
+
+        // Act
+        await _dynamicDns.UpdateIpAddressesAsync();
+
+        // Assert
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage?.AbsoluteUrl).ToArray();
+        var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
+
+        Assert.Equal(ip, savedIp);
+        Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
+        Assert.Contains(_logger.Logs!, msg => msg.Contains("[WRN]") && msg.Contains("saved state file"));
+        GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
+    }
+
+    [Theory]
+    [InlineData("2001:db8::1")]
+    [InlineData("62.59.90")]
+    [InlineData("062.59.90.127")]
+    public async Task UsesNextProviderWhenResponseIsNotACanonicalIpv4Address(string invalidResponse)
+    {
+        // Arrange
+        const string ip = "62.59.90.127";
+
+        var ipApiUrls = _runConfig.IpProviderUrls!;
+
+        SetUpPublicIpApi(ipApiUrls[0], invalidResponse);
+        SetUpPublicIpApi(ipApiUrls[1], ip);
+        SetUpDdnsApis();
+
+        // Act
+        await _dynamicDns.UpdateIpAddressesAsync();
+
+        // Assert
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage?.AbsoluteUrl).ToArray();
+        var savedIp = await File.ReadAllTextAsync(_runConfig.SavedStateFilePath, _ct);
+
+        Assert.Equal(ip, savedIp);
+        Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
+        Assert.Contains(_logger.Logs!, msg =>
+            msg.Contains("[WRN]") && msg.Contains(ipApiUrls[0]) && msg.Contains("not a valid IPv4 address"));
+        GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
+    }
+
+    [Fact]
+    public async Task DoesNotSaveNewIpWhenOnlySomeDdnsUpdatesSucceed()
+    {
+        // Arrange
+        const string ip = "62.59.90.127";
+
+        var succeedingInstance = _runConfig.Instances![0];
+        var failingInstance = _runConfig.Instances![1];
+
+        SetUpPublicIpApis(ip);
+        SetUpDdnsApi(succeedingInstance.DnsApiUrlTemplate!, succeedingInstance.DnsApiSuccessMessage!);
+        _mockServer
+            .Given(Request.Create().WithPath(new Uri(failingInstance.DnsApiUrlTemplate!).LocalPath).UsingGet())
+            .RespondWith(Response.Create().WithStatusCode(503));
+
+        // Act
+        await _dynamicDns.UpdateIpAddressesAsync();
+
+        // Assert: every host is still attempted, but the IP is not saved, so the next run retries all of them
+        var requestedUrls = _mockServer.LogEntries.Select(l => l.RequestMessage?.AbsoluteUrl).ToArray();
+        var hasSavedIp = File.Exists(_runConfig.SavedStateFilePath);
+
+        Assert.False(hasSavedIp);
+        GetExpectedUrlCalls(ip).ForEach(expectedUrl => Assert.Contains(expectedUrl, requestedUrls));
+        Assert.Contains(_logger.Logs!, msg =>
+            msg.Contains("[ERR]") && msg.Contains("unable to update public IP"));
+        succeedingInstance.Hosts!.ForEach(host => Assert.Contains(_logger.Logs!, msg =>
+            msg.Contains("[INF]") && msg.Contains($"'{host}.{succeedingInstance.DomainName}'")));
+        failingInstance.Hosts!.ForEach(host => Assert.Contains(_logger.Logs!, msg =>
+            msg.Contains("[WRN]") && msg.Contains($"'{host}.{failingInstance.DomainName}'")));
+    }
+
     [Fact]
     public async Task DoesNotRunWhenThereIsNoValidConfiguration()
     {
@@ -188,10 +287,9 @@ public class DynamicDnsTests : IDisposable
         const string ip = "62.59.90.127";
 
         var ipApiUrls = _runConfig.IpProviderUrls!;
+        var unreachableIpApiUrl = ToUnreachableUrl(ipApiUrls[0]);
 
-        _mockServer
-            .Given(Request.Create().WithPath(new Uri(ipApiUrls[0]).LocalPath).UsingGet())
-            .RespondWith(Response.Create().WithFault(FaultType.MALFORMED_RESPONSE_CHUNK));
+        ConfigSetup.WriteConfig(_runId, _runConfig with { IpProviderUrls = [unreachableIpApiUrl, ipApiUrls[1]] });
         SetUpPublicIpApi(ipApiUrls[1], ip);
         SetUpDdnsApis();
 
@@ -203,7 +301,8 @@ public class DynamicDnsTests : IDisposable
 
         Assert.Equal(ip, savedIp);
         Assert.DoesNotContain(_logger.Logs!, msg => msg.Contains("[ERR]"));
-        Assert.Contains(_logger.Logs!, msg => msg.Contains("[WRN]") && msg.Contains(ipApiUrls[0]));
+        Assert.Contains(_logger.Logs!, msg =>
+            msg.Contains("[WRN]") && msg.Contains(unreachableIpApiUrl) && msg.Contains("HttpRequestException:"));
     }
 
     [Fact]
@@ -214,11 +313,11 @@ public class DynamicDnsTests : IDisposable
 
         SetUpPublicIpApis(ip);
 
-        _runConfig.Instances!.ForEach(i =>
+        ConfigSetup.WriteConfig(_runId, _runConfig with
         {
-            _mockServer
-                .Given(Request.Create().WithPath(new Uri(i.DnsApiUrlTemplate!).LocalPath).UsingGet())
-                .RespondWith(Response.Create().WithFault(FaultType.MALFORMED_RESPONSE_CHUNK));
+            Instances = _runConfig.Instances!
+                .Select(i => i with { DnsApiUrlTemplate = ToUnreachableUrl(i.DnsApiUrlTemplate!) })
+                .ToArray()
         });
 
         // Act
@@ -230,6 +329,24 @@ public class DynamicDnsTests : IDisposable
         Assert.False(hasSavedIp);
         Assert.Contains(_logger.Logs!, msg =>
             msg.Contains("[ERR]") && msg.Contains("unable to update public IP"));
+        _runConfig.Instances!.ForEach(i => i.Hosts!.ForEach(host =>
+            Assert.Contains(_logger.Logs!, msg =>
+                msg.Contains("[WRN]") && msg.Contains($"'{host}.{i.DomainName}'") &&
+                msg.Contains("HttpRequestException:"))));
+    }
+
+    /// <summary>
+    /// Points the URL at a local port with nothing listening on it,
+    /// so requests fail with a real connection error instead of an HTTP response.
+    /// </summary>
+    private string ToUnreachableUrl(string url)
+    {
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var freePort = ((IPEndPoint)listener.LocalEndpoint).Port;
+        listener.Stop();
+
+        return url.Replace(_mockServer.Urls[0], $"http://127.0.0.1:{freePort}");
     }
 
     [Fact]
