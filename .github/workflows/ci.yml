@@ -38,7 +38,9 @@ jobs:
           --coverage-settings DynamicDnsClient.Tests/coverage.config
           --results-directory ./DynamicDnsClient.Tests/TestResults
 
+      # Skipped for Dependabot: its runs can't access Actions secrets, and coverage adds nothing to version-bump PRs
       - name: Upload coverage to Codecov
+        if: github.actor != 'dependabot[bot]'
         uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
