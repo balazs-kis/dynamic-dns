@@ -88,14 +88,21 @@ jobs:
           -p:Version=${{ needs.test.outputs.version }}
 
       # Packaged here rather than in the release job: artifact uploads drop the executable bit.
+      # Files are stored as owned by root (0:0) instead of the runner's user (UID 1001): when extracted with sudo,
+      # tar restores the stored owner, which would otherwise map to whichever user has UID 1001 on the target machine.
       # COPYFILE_DISABLE and --no-xattrs keep macOS metadata (._* files, extended attributes) out of the archive.
       - name: Package as tar.gz
         if: runner.os != 'Windows'
         env:
           COPYFILE_DISABLE: 1
         run: |
+          if [[ "$RUNNER_OS" == "macOS" ]]; then
+            owner_flags="--uid 0 --gid 0 --numeric-owner"         # bsdtar
+          else
+            owner_flags="--owner=0 --group=0 --numeric-owner"     # GNU tar
+          fi
           chmod +x publish/DynamicDnsClient
-          tar --no-xattrs -czf ${{ matrix.asset }}.tar.gz -C publish DynamicDnsClient appsettings.json
+          tar --no-xattrs $owner_flags -czf ${{ matrix.asset }}.tar.gz -C publish DynamicDnsClient appsettings.json
 
       - name: Package as zip
         if: runner.os == 'Windows'
